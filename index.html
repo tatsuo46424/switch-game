@@ -28,6 +28,7 @@
   --lit:#ffd43b; --fil-on:#b36b00; --pilot:#ff5a3c;
   --live-l:#e0402f; --live-n:#2f6fd8;
   --wire-edge:#4a4f53; --w-black:#1b1b1b; --w-white:#f4f4ef; --w-red:#cf2b1f;
+  --sheath:#d4d6d1; --sheath-edge:#7b8185;
   --hazard-a:#e39b00; --hazard-b:#1b1d1f;
   --f-disp:"Dela Gothic One","BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;
   --f-body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;
@@ -42,6 +43,7 @@
     --lit:#ffd43b; --fil-on:#b36b00; --pilot:#ff6a4c;
     --live-l:#ff5a48; --live-n:#5c95ff;
     --wire-edge:#cfd5d8;
+    --sheath:#8d9397; --sheath-edge:#c9cfd2;
     color-scheme:dark;
   }
 }
@@ -54,6 +56,7 @@
   --lit:#ffd43b; --fil-on:#b36b00; --pilot:#ff6a4c;
   --live-l:#ff5a48; --live-n:#5c95ff;
   --wire-edge:#cfd5d8;
+  --sheath:#8d9397; --sheath-edge:#c9cfd2;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -66,7 +69,7 @@ body{
 .top{display:flex; flex-wrap:wrap; gap:14px 28px; align-items:flex-end; justify-content:space-between}
 .brand{min-width:0}
 h1{font-family:var(--f-disp); font-weight:400; font-size:clamp(26px,3.6vw,36px); line-height:1.15; margin:0; letter-spacing:.03em}
-.brand p{margin:6px 0 0; color:var(--muted); font-size:14px; max-width:36em}
+.brand p{margin:6px 0 0; color:var(--muted); font-size:14px; max-width:38em}
 .hazard{height:8px; border-radius:2px; background:repeating-linear-gradient(135deg,var(--hazard-a) 0 12px,var(--hazard-b) 12px 24px)}
 
 .levels{display:flex; flex-wrap:wrap; gap:6px}
@@ -129,7 +132,7 @@ h1{font-family:var(--f-disp); font-weight:400; font-size:clamp(26px,3.6vw,36px);
 #board .sstate{font-size:13px; font-weight:700; fill:var(--ink)}
 #board .swg{cursor:pointer}
 #board .swg:hover .body,#board .swg:focus-visible .body{stroke:var(--accent); stroke-width:3}
-#board .swg:focus,#board .term:focus,#board .wire:focus{outline:none}
+#board .swg:focus,#board .term:focus,#board .link:focus{outline:none}
 #board .lampbody.on{fill:var(--lit)}
 #board .fil{stroke:var(--muted); stroke-width:2; fill:none}
 #board .fil.on{stroke:var(--fil-on)}
@@ -138,16 +141,26 @@ h1{font-family:var(--f-disp); font-weight:400; font-size:clamp(26px,3.6vw,36px);
 #board .ostat{font-size:13px; font-weight:700; fill:var(--muted)}
 #board .ostat.on{fill:var(--ok)}
 #board .jb{fill:none; stroke:var(--muted); stroke-width:1.5; stroke-dasharray:6 5}
+#board .boxline{fill:none; stroke:var(--muted); stroke-width:1.5; stroke-dasharray:4 4}
 #board .chipk{fill:var(--w-black); stroke:var(--wire-edge)}
 #board .chipw{fill:var(--w-white); stroke:var(--wire-edge)}
 #board .brk{font-size:12px; font-weight:700; fill:var(--ok)}
 #board .brk.trip{fill:var(--ng)}
+
+#board .sheathe{stroke:var(--sheath-edge); stroke-width:15; stroke-linecap:round; fill:none}
+#board .sheath{stroke:var(--sheath); stroke-width:11; stroke-linecap:round; fill:none}
+#board .cond{stroke-width:4; fill:none; stroke-linecap:round}
+#board .condE{stroke:var(--wire-edge); stroke-width:6.5; fill:none; stroke-linecap:round}
+#board .clabel{font-size:11px; font-weight:700; fill:var(--muted); paint-order:stroke; stroke:var(--board); stroke-width:4px; stroke-linejoin:round}
+#board .sleeve{font-size:10px; font-weight:700; fill:var(--accent); paint-order:stroke; stroke:var(--board); stroke-width:3px}
 
 #board .term{cursor:crosshair}
 #board .term .hit{fill:transparent}
 #board .term .screw{fill:var(--term); stroke:var(--dev-stroke); stroke-width:1.5}
 #board .term .slot{stroke:var(--dev-stroke); stroke-width:1.6}
 #board .term.node .screw{fill:var(--board); stroke:var(--muted); stroke-width:2.5}
+#board .term.stub .screw{stroke:var(--wire-edge); stroke-width:2}
+#board .term.stub.free .screw{stroke:var(--accent); stroke-width:3}
 #board .term:hover .screw,#board .term:focus-visible .screw{stroke:var(--accent); stroke-width:3}
 #board .term .ring{fill:none; stroke:var(--accent); stroke-width:3; opacity:0}
 #board .term.sel .ring{opacity:1; animation:pulse 1s ease-in-out infinite}
@@ -156,16 +169,16 @@ h1{font-family:var(--f-disp); font-weight:400; font-size:clamp(26px,3.6vw,36px);
 #board .pN{fill:var(--live-n); opacity:.42}
 @keyframes pulse{50%{stroke-opacity:.25}}
 
-#board .wire{cursor:pointer}
-#board .wire .whit{stroke:transparent; stroke-width:16; fill:none}
-#board .wire .wedge{stroke:var(--wire-edge); stroke-width:7.5; fill:none; stroke-linecap:round}
-#board .wire .wcore{stroke-width:4.5; fill:none; stroke-linecap:round}
-#board .wire:hover .wedge,#board .wire:focus-visible .wedge{stroke:var(--ng); stroke-width:9}
-#board .rubber{fill:none; stroke-width:4; stroke-dasharray:8 6; pointer-events:none; opacity:.85}
+#board .link{cursor:pointer}
+#board .link .whit{stroke:transparent; stroke-width:14; fill:none}
+#board .link .wedge{stroke:var(--wire-edge); stroke-width:6.5; fill:none; stroke-linecap:round}
+#board .link .wcore{stroke-width:4; fill:none; stroke-linecap:round}
+#board .link.jmp .wcore{stroke-dasharray:none}
+#board .link:hover .wedge,#board .link:focus-visible .wedge{stroke:var(--ng); stroke-width:8}
+#board .rubber{fill:none; stroke-width:3.5; stroke-dasharray:7 6; pointer-events:none; opacity:.85; stroke:var(--accent)}
 #board .banner rect{fill:var(--ng)}
 #board .banner text{fill:var(--on-ng); font-size:15px; font-weight:700}
 
-.side{display:grid; gap:14px; min-width:0}
 .card{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px 18px; min-width:0}
 .eyebrow{font-size:11px; letter-spacing:.16em; color:var(--muted); font-weight:700}
 .card h2{font-family:var(--f-disp); font-weight:400; font-size:22px; line-height:1.3; margin:2px 0 8px; text-wrap:balance}
@@ -174,6 +187,10 @@ h1{font-family:var(--f-disp); font-weight:400; font-size:clamp(26px,3.6vw,36px);
 .reqs{margin:0 0 12px; padding:0; list-style:none; display:grid; gap:6px}
 .reqs li{display:grid; grid-template-columns:auto 1fr; gap:8px; font-size:14px; line-height:1.5}
 .reqs li::before{content:""; width:8px; height:8px; margin-top:7px; background:var(--accent); transform:rotate(45deg)}
+.mat{margin:0 0 12px; padding:10px 12px; border:1px dashed var(--line); border-radius:8px; font-size:13px}
+.mat b{display:block; font-size:11px; letter-spacing:.12em; color:var(--muted); margin-bottom:4px}
+.mat ul{margin:0; padding:0; list-style:none; display:grid; gap:2px}
+.mat li{display:flex; justify-content:space-between; gap:12px; font-variant-numeric:tabular-nums}
 .mbtns{display:flex; flex-wrap:wrap; gap:8px}
 .hint{margin:12px 0 0 !important; padding:10px 12px; background:var(--bg); border-radius:8px; font-size:14px}
 .note{font-size:13px; color:var(--muted)}
@@ -192,6 +209,7 @@ h1{font-family:var(--f-disp); font-weight:400; font-size:clamp(26px,3.6vw,36px);
 .checks .ng{color:var(--ng); font-weight:700}
 .checks .na{color:var(--muted)}
 .defects{margin:0 0 12px; padding-left:1.2em; font-size:13px; color:var(--ng); display:grid; gap:4px}
+.sleeves{font-size:13px; margin:0 0 10px}
 .tablewrap{overflow-x:auto; margin-bottom:10px}
 table{border-collapse:collapse; width:100%; font-size:13px; font-variant-numeric:tabular-nums}
 th,td{border:1px solid var(--line); padding:4px 6px; text-align:center; white-space:nowrap}
@@ -203,8 +221,8 @@ td.short{background:var(--ng-soft); color:var(--ng); font-weight:700}
 .legend{font-size:12px; color:var(--muted); margin:0 0 10px}
 
 .rules summary{cursor:pointer; font-weight:700}
-.rules ul{margin:10px 0 0; padding-left:1.2em; font-size:14px; display:grid; gap:6px}
-.rules .note{margin-top:10px}
+.rules ol,.rules ul{margin:10px 0 0; padding-left:1.4em; font-size:14px; display:grid; gap:6px}
+.rules h4{margin:14px 0 0; font-size:13px; color:var(--muted)}
 
 .toast{position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:8px 16px; border-radius:8px; font-size:14px; font-weight:700; max-width:calc(100% - 32px)}
 :focus-visible{outline:3px solid var(--accent); outline-offset:2px}
@@ -218,7 +236,7 @@ td.short{background:var(--ng-soft); color:var(--ng); font-weight:700}
   <header class="top">
     <div class="brand">
       <h1>スイッチ結線ゲーム</h1>
-      <p>電源・スイッチ・ランプの端子を電線でつなぎ、スイッチを切り替えて点灯を確かめます。第二種電気工事士の複線図の練習にどうぞ。</p>
+      <p>第二種・第一種電気工事士の技能試験と同じく、使えるVVFケーブルの本数と心線は決まっています。ケーブルの心線を器具の端子とジョイントボックスにつなぎ、施工条件どおりに仕上げてください。</p>
     </div>
     <nav class="levels" id="levels" aria-label="ステージ選択"></nav>
   </header>
@@ -227,36 +245,47 @@ td.short{background:var(--ng-soft); color:var(--ng); font-weight:700}
   <main class="main">
     <section class="boardcol" aria-label="施工板">
       <div class="toolbar">
-        <div class="seg" role="group" aria-label="電線の色">
-          <span class="lab">電線</span>
+        <div class="seg" role="group" aria-label="渡り線の色">
+          <span class="lab">渡り線</span>
           <button type="button" id="col-k" data-color="k"><span class="chip" style="background:var(--w-black)"></span>黒</button>
           <button type="button" id="col-w" data-color="w"><span class="chip" style="background:var(--w-white)"></span>白</button>
           <button type="button" id="col-r" data-color="r"><span class="chip" style="background:var(--w-red)"></span>赤</button>
         </div>
         <button type="button" class="btn" id="undo">元に戻す</button>
-        <button type="button" class="btn" id="clear">電線を全部外す</button>
+        <button type="button" class="btn" id="clear">結線を全部外す</button>
         <label class="chk"><input type="checkbox" id="probe">検電表示</label>
         <span class="grow"></span>
         <button type="button" class="btn primary" id="judge">判定する</button>
       </div>
-      <div class="boardwrap"><svg id="board" viewBox="0 0 1000 620" role="application" aria-label="結線ボード"></svg></div>
+      <div class="boardwrap"><svg id="board" viewBox="0 0 1000 720" role="application" aria-label="結線ボード"></svg></div>
       <p class="live" id="live" aria-live="polite"></p>
-      <p class="howto"><b>端子</b>をタップ → 別の端子をタップで電線をつなぐ（マウスならドラッグでも可）。<b>電線</b>をタップで外す。<b>スイッチ本体</b>をタップで切り替え。検電表示をオンにすると、L側の端子が赤、N側の端子が青で光ります。</p>
+      <p class="howto">ケーブル端の<b>心線（色の丸）</b>をタップ → つなぐ<b>端子</b>をタップ。ジョイントボックス（点線の円）の中では<b>接続点</b>につなぎ、同じ接続点につないだ心線どうしが接続されます。同じボックス内の器具の端子どうしをタップすると<b>渡り線</b>になります。つないだ線をタップすると外れます。<b>スイッチ本体</b>のタップで切り替え。</p>
     </section>
 
-      <section class="card" id="mission"></section>
-      <section class="card" id="result"></section>
-      <details class="card rules">
-        <summary>結線のルール（採点基準）</summary>
-        <ul>
-          <li><b>動作</b>：スイッチのすべての組み合わせで、条件どおりに点灯・消灯すること。LとNが負荷を通らずにつながると短絡です。</li>
-          <li><b>極性</b>：スイッチは非接地側（L）を開閉する。ランプとコンセントのW端子は接地側（N）につなぐ。</li>
-          <li><b>電線の色</b>：接地側（N）の電線は白。このゲームでは1本ずつ色を選べるので、白は接地側専用にします。</li>
-          <li><b>3路スイッチ</b>：0 が共通端子。切り替えるたびに 0–1 と 0–3 が入れ替わります。</li>
-          <li><b>4路スイッチ</b>：盤上の内部図のとおり、1–3・2–4 と 1–4・2–3 が入れ替わります。</li>
-        </ul>
-        <p class="note">実際の施工では、VVFケーブルの心線の都合でスイッチ回路に白線を使うことがあります。このゲームの色のルールは練習用に単純化したものです。</p>
-      </details>
+    <section class="card" id="mission"></section>
+    <section class="card" id="result"></section>
+    <details class="card rules">
+      <summary>施工条件（採点基準）</summary>
+      <ol>
+        <li>電源からの接地側電線には、すべて<b>白色</b>を使用する。</li>
+        <li>電源から点滅器・コンセントまでの非接地側電線には、すべて<b>黒色</b>を使用する。</li>
+        <li>ランプの受金ねじ部の端子、コンセントの接地側極端子（W）には<b>白色</b>の電線を結線する。</li>
+        <li>3路スイッチの「0」には電源側または負荷側の電線を、「1」「3」にはスイッチ相互間の電線を結線する。</li>
+        <li>ジョイントボックス内の接続はリングスリーブによる圧着接続とする。</li>
+      </ol>
+      <h4>リングスリーブ（1.6mm）の選び方</h4>
+      <ul>
+        <li>2本：小スリーブ・刻印「○」</li>
+        <li>3〜4本：小スリーブ・刻印「小」</li>
+        <li>5〜6本：中スリーブ・刻印「中」</li>
+      </ul>
+      <h4>このゲームでの約束</h4>
+      <ul>
+        <li>心線は1本も余らせずに使う（未結線は欠陥）。</li>
+        <li>器具の端子には2本まで、接続点には6本までつなげます。</li>
+        <li>4路スイッチは盤上の内部図のとおり、1–3・2–4 と 1–4・2–3 が入れ替わります。</li>
+      </ul>
+    </details>
   </main>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -264,124 +293,166 @@ td.short{background:var(--ng-soft); color:var(--ng); font-weight:700}
 <script>
 (function(){
 'use strict';
-const KEY='switch-wiring-game-v1';
+const KEY='switch-wiring-game-v2';
 const $=s=>document.querySelector(s);
 const svg=$('#board');
 const LOADS={lamp:1,pilot:1,outlet:1};
 const SWT={sw1:'片切',sw3:'3路',sw4:'4路'};
 const COLORS={k:{name:'黒',v:'var(--w-black)'},w:{name:'白',v:'var(--w-white)'},r:{name:'赤',v:'var(--w-red)'}};
+const CORE={2:['k','w'],3:['k','w','r']};
+const RING=70,SPREAD=22,TERM_MAX=2,NODE_MAX=6;
 
-/* 端子: [dx, dy, 引き出し方向x, 方向y] */
+/* 端子: [dx, dy, 引き出し方向x, 方向y]、port = ケーブルが入ってくる位置 */
 const DEV={
-  power:{t:{L:[62,-35,1,0],N:[62,35,1,0]}},
-  lamp:{t:{W:[-24,50,0,1],X:[24,50,0,1]}},
-  pilot:{t:{a:[-18,-44,0,-1],b:[18,-44,0,-1]}},
-  outlet:{t:{W:[-54,-22,-1,0],X:[-54,22,-1,0]}},
-  sw1:{t:{'1':[-26,-82,0,-1],'2':[26,-82,0,-1]}},
-  sw3:{t:{'0':[-36,-82,0,-1],'1':[6,-82,0,-1],'3':[38,-82,0,-1]}},
-  sw4:{t:{'1':[-45,-82,0,-1],'2':[-15,-82,0,-1],'3':[15,-82,0,-1],'4':[45,-82,0,-1]}},
-  jb:{t:{j1:[-50,-30,0,0],j2:[0,-30,0,0],j3:[50,-30,0,0],j4:[-50,30,0,0],j5:[0,30,0,0],j6:[50,30,0,0]}}
+  power:{t:{L:[62,-35,1,0],N:[62,35,1,0]},port:[100,0]},
+  lamp:{t:{W:[-24,50,0,1],X:[24,50,0,1]},port:[0,76]},
+  pilot:{t:{a:[-18,-44,0,-1],b:[18,-44,0,-1]},port:[0,-104]},
+  outlet:{t:{W:[-54,-22,-1,0],X:[-54,22,-1,0]},port:[-94,0]},
+  sw1:{t:{'1':[-26,-82,0,-1],'2':[26,-82,0,-1]},port:[0,-108]},
+  sw3:{t:{'0':[-36,-82,0,-1],'1':[6,-82,0,-1],'3':[38,-82,0,-1]},port:[0,-108]},
+  sw4:{t:{'1':[-45,-82,0,-1],'2':[-15,-82,0,-1],'3':[15,-82,0,-1],'4':[45,-82,0,-1]},port:[0,-108]},
+  jb:{t:{j1:[-45,-16,0,0],j2:[-15,-16,0,0],j3:[15,-16,0,0],j4:[45,-16,0,0],j5:[-45,16,0,0],j6:[-15,16,0,0],j7:[15,16,0,0],j8:[45,16,0,0]}}
 };
-const P={id:'P',type:'power',x:95,y:300}, J={id:'J',type:'jb',x:470,y:300};
-
+const P={id:'P',type:'power'}, J={id:'J',type:'jb'};
+const PW={P:[90,340],J:[470,340]}, PT={P:[75,500],J:[330,500]};
+/* ケーブル: f/t = 両端の器具、a = 心線ごとの「f側の端子>t側の端子」（解答例）。心線の色は 2C=黒白、3C=黒白赤 */
 const LEVELS=[
  {id:'s1',short:'片切',name:'片切スイッチで1灯',
-  mission:'いちばん基本の回路です。片切スイッチ イ で、ランプ イ を点けたり消したりできるように結線してください。',
-  hint:'電源N（白）→ ランプのW端子。電源L（黒）→ スイッチ。スイッチのもう一方の端子 → ランプの残りの端子。ジョイントボックスの接続点は中継に使えます。',
-  devices:[P,J,{id:'A',type:'lamp',x:470,y:105,name:'イ'},{id:'S1',type:'sw1',x:470,y:515,name:'イ',tag:'イ'}],
-  req:[{load:'A',kind:'follow',sw:'S1',text:'スイッチ イ がONのときだけ、ランプ イ が点灯する'}],
-  answer:'P.N-J.j1-w J.j1-A.W-w P.L-J.j4-k J.j4-S1.1-k S1.2-J.j5-r J.j5-A.X-r'},
+  mission:'いちばん基本の回路です。片切スイッチ イ で、ランプ イ を点けたり消したりできるようにします。',
+  hint:'電源の白はランプのW、電源の黒はスイッチへ。スイッチへの2心ケーブルは、黒が電源側、白がランプへの帰り線になります。',
+  devices:[P,J,{id:'A',type:'lamp',name:'イ'},{id:'S1',type:'sw1',name:'イ',tag:'イ'}],
+  pos:{w:{...PW,A:[470,88],S1:[300,620]},t:{...PT,A:[330,88],S1:[330,900]}},
+  cables:[{f:'P',t:'J',a:['P.L>J.j1','P.N>J.j5']},{f:'J',t:'A',a:['J.j2>A.X','J.j5>A.W']},{f:'J',t:'S1',a:['J.j1>S1.1','J.j2>S1.2']}],
+  req:[{load:'A',kind:'follow',sw:'S1',text:'スイッチ イ がONのときだけ、ランプ イ が点灯する'}]},
  {id:'s2',short:'2灯別々',name:'2つのスイッチで2灯',
   mission:'スイッチ イ はランプ イ を、スイッチ ロ はランプ ロ を、それぞれ別々に点滅させます。',
-  hint:'NとLは接続点で分岐させます。N側は両方のランプのWへ、L側は両方のスイッチへ。',
-  devices:[P,J,{id:'A',type:'lamp',x:340,y:105,name:'イ'},{id:'B',type:'lamp',x:600,y:105,name:'ロ'},
-    {id:'S1',type:'sw1',x:340,y:515,name:'イ',tag:'イ'},{id:'S2',type:'sw1',x:600,y:515,name:'ロ',tag:'ロ'}],
-  req:[{load:'A',kind:'follow',sw:'S1',text:'スイッチ イ でランプ イ が点滅する'},{load:'B',kind:'follow',sw:'S2',text:'スイッチ ロ でランプ ロ が点滅する'}],
-  answer:'P.N-J.j1-w J.j1-A.W-w J.j1-B.W-w P.L-J.j4-k J.j4-S1.1-k J.j4-S2.1-k S1.2-J.j5-r J.j5-A.X-r S2.2-J.j6-r J.j6-B.X-r'},
+  hint:'電源の黒・白を受ける接続点に、それぞれ3本ずつ集まります。帰り線はスイッチごとに別の接続点で。',
+  devices:[P,J,{id:'A',type:'lamp',name:'イ'},{id:'B',type:'lamp',name:'ロ'},{id:'S1',type:'sw1',name:'イ',tag:'イ'},{id:'S2',type:'sw1',name:'ロ',tag:'ロ'}],
+  pos:{w:{...PW,A:[330,88],B:[610,88],S1:[300,620],S2:[640,620]},t:{...PT,A:[190,88],B:[450,88],S1:[190,900],S2:[470,900]}},
+  cables:[{f:'P',t:'J',a:['P.L>J.j1','P.N>J.j5']},{f:'J',t:'A',a:['J.j2>A.X','J.j5>A.W']},{f:'J',t:'B',a:['J.j3>B.X','J.j5>B.W']},
+    {f:'J',t:'S1',a:['J.j1>S1.1','J.j2>S1.2']},{f:'J',t:'S2',a:['J.j1>S2.1','J.j3>S2.2']}],
+  req:[{load:'A',kind:'follow',sw:'S1',text:'スイッチ イ でランプ イ が点滅する'},{load:'B',kind:'follow',sw:'S2',text:'スイッチ ロ でランプ ロ が点滅する'}]},
  {id:'s3',short:'2灯同時',name:'1つのスイッチで2灯',
   mission:'スイッチ イ ひとつで、ランプ イ を2灯同時に点滅させます。',
-  hint:'スイッチから戻ってきた線を接続点で分岐させて、両方のランプへ送ります。N側も両方のランプのWへ。',
-  devices:[P,J,{id:'A',type:'lamp',x:340,y:105,name:'イ',tag:'イ（左）'},{id:'B',type:'lamp',x:600,y:105,name:'イ',tag:'イ（右）'},
-    {id:'S1',type:'sw1',x:470,y:515,name:'イ',tag:'イ'}],
-  req:[{load:'A',kind:'follow',sw:'S1',text:'スイッチ イ で左のランプが点滅する'},{load:'B',kind:'follow',sw:'S1',text:'右のランプも同時に点滅する'}],
-  answer:'P.N-J.j1-w J.j1-A.W-w J.j1-B.W-w P.L-J.j4-k J.j4-S1.1-k S1.2-J.j5-r J.j5-A.X-r J.j5-B.X-r'},
+  hint:'スイッチからの帰り線（白）と、両方のランプの黒を同じ接続点に集めます。',
+  devices:[P,J,{id:'A',type:'lamp',name:'イ',tag:'イ（左）'},{id:'B',type:'lamp',name:'イ',tag:'イ（右）'},{id:'S1',type:'sw1',name:'イ',tag:'イ'}],
+  pos:{w:{...PW,A:[330,88],B:[610,88],S1:[300,620]},t:{...PT,A:[190,88],B:[450,88],S1:[330,900]}},
+  cables:[{f:'P',t:'J',a:['P.L>J.j1','P.N>J.j5']},{f:'J',t:'A',a:['J.j2>A.X','J.j5>A.W']},{f:'J',t:'B',a:['J.j2>B.X','J.j5>B.W']},
+    {f:'J',t:'S1',a:['J.j1>S1.1','J.j2>S1.2']}],
+  req:[{load:'A',kind:'follow',sw:'S1',text:'スイッチ イ で左のランプが点滅する'},{load:'B',kind:'follow',sw:'S1',text:'右のランプも同時に点滅する'}]},
  {id:'s4',short:'3路',name:'3路スイッチ',
   mission:'階段の上と下のように、2か所のどちらからでもランプを点けたり消したりできるようにします。',
-  hint:'3路スイッチの「0」は共通端子です。電源Lを片方の0へ、もう片方の0をランプへ。2つのスイッチの1どうし、3どうしをつなぎます。',
-  devices:[P,J,{id:'A',type:'lamp',x:470,y:105,name:'イ'},
-    {id:'S1',type:'sw3',x:300,y:515,name:'イ',tag:'イ・左'},{id:'S2',type:'sw3',x:640,y:515,name:'イ',tag:'イ・右'}],
-  req:[{load:'A',kind:'toggle',sws:['S1','S2'],text:'どちらの3路スイッチを切り替えても、ランプ イ の点灯と消灯が入れ替わる'}],
-  answer:'P.N-J.j1-w J.j1-A.W-w P.L-J.j4-k J.j4-S1.0-k S1.1-J.j2-r J.j2-S2.1-r S1.3-J.j3-k J.j3-S2.3-k S2.0-J.j5-r J.j5-A.X-r'},
+  hint:'3心ケーブルの黒を、電源側の3路は「0」へ（電源の黒と接続）、負荷側の3路も「0」へ（ランプへの帰り線）。白どうし・赤どうしを接続点でつなぎ、1と3に入れます。',
+  devices:[P,J,{id:'A',type:'lamp',name:'イ'},{id:'S1',type:'sw3',name:'イ',tag:'イ・左'},{id:'S2',type:'sw3',name:'イ',tag:'イ・右'}],
+  pos:{w:{...PW,A:[470,88],S1:[250,620],S2:[690,620]},t:{...PT,A:[330,88],S1:[170,900],S2:[490,900]}},
+  cables:[{f:'P',t:'J',a:['P.L>J.j1','P.N>J.j5']},{f:'J',t:'A',a:['J.j3>A.X','J.j5>A.W']},
+    {f:'J',t:'S1',a:['J.j1>S1.0','J.j2>S1.1','J.j6>S1.3']},{f:'J',t:'S2',a:['J.j3>S2.0','J.j2>S2.1','J.j6>S2.3']}],
+  req:[{load:'A',kind:'toggle',sws:['S1','S2'],text:'どちらの3路スイッチを切り替えても、ランプ イ の点灯と消灯が入れ替わる'}]},
  {id:'s5',short:'4路',name:'3路＋4路スイッチ',
-  mission:'3か所のどこからでもランプを点滅させます。両端に3路スイッチ、その間に4路スイッチを入れます。',
-  hint:'両端の3路の「0」が、電源Lとランプにつながります。左の3路の1・3を4路の1・2へ、4路の3・4を右の3路の1・3へ。',
-  devices:[P,J,{id:'A',type:'lamp',x:470,y:105,name:'イ'},
-    {id:'S1',type:'sw3',x:250,y:515,name:'イ',tag:'イ・左'},{id:'S2',type:'sw4',x:470,y:515,name:'イ',tag:'イ・4路'},{id:'S3',type:'sw3',x:690,y:515,name:'イ',tag:'イ・右'}],
-  req:[{load:'A',kind:'toggle',sws:['S1','S2','S3'],text:'3つのどのスイッチを切り替えても、ランプ イ の点灯と消灯が入れ替わる'}],
-  answer:'P.N-J.j1-w J.j1-A.W-w P.L-J.j4-k J.j4-S1.0-k S1.1-S2.1-r S1.3-S2.2-k S2.3-S3.1-r S2.4-S3.3-k S3.0-J.j6-r J.j6-A.X-r'},
- {id:'s6',short:'コンセント',name:'スイッチとコンセント',
-  mission:'ランプ イ はスイッチ イ で点滅させ、コンセントはいつでも使えるようにします。',
-  hint:'コンセントはスイッチを通さず、接続点からLとNを直接もらいます。コンセントのW端子（長いほうの穴の側）には白線。',
-  devices:[P,J,{id:'A',type:'lamp',x:470,y:105,name:'イ'},{id:'S1',type:'sw1',x:470,y:515,name:'イ',tag:'イ'},{id:'C',type:'outlet',x:900,y:300}],
-  req:[{load:'A',kind:'follow',sw:'S1',text:'スイッチ イ でランプ イ が点滅する'},{load:'C',kind:'always',text:'コンセントはスイッチに関係なく、常に通電している'}],
-  answer:'P.N-J.j1-w J.j1-A.W-w J.j1-C.W-w P.L-J.j4-k J.j4-S1.1-k J.j4-C.X-k S1.2-J.j5-r J.j5-A.X-r'},
+  mission:'3か所のどこからでもランプを点滅させます。4路スイッチへは2心ケーブルが2本入ります。',
+  hint:'左の3路の1・3 → 4路の1・2、4路の3・4 → 右の3路の1・3 を、それぞれ接続点で中継します。右の3路の0がランプへの帰り線です。',
+  devices:[P,J,{id:'A',type:'lamp',name:'イ'},{id:'S1',type:'sw3',name:'イ',tag:'イ・左'},{id:'S2',type:'sw4',name:'イ',tag:'イ・4路'},{id:'S3',type:'sw3',name:'イ',tag:'イ・右'}],
+  pos:{w:{...PW,A:[470,88],S1:[220,620],S2:[470,620],S3:[720,620]},t:{...PT,A:[330,88],S1:[95,900],S2:[320,900],S3:[540,900]}},
+  cables:[{f:'P',t:'J',a:['P.L>J.j1','P.N>J.j5']},{f:'J',t:'A',a:['J.j4>A.X','J.j5>A.W']},
+    {f:'J',t:'S1',a:['J.j1>S1.0','J.j2>S1.1','J.j3>S1.3']},
+    {f:'J',t:'S2',a:['J.j2>S2.1','J.j3>S2.2']},{f:'J',t:'S2',a:['J.j6>S2.3','J.j7>S2.4']},
+    {f:'J',t:'S3',a:['J.j4>S3.0','J.j6>S3.1','J.j7>S3.3']}],
+  req:[{load:'A',kind:'toggle',sws:['S1','S2','S3'],text:'3つのどのスイッチを切り替えても、ランプ イ の点灯と消灯が入れ替わる'}]},
+ {id:'s6',short:'連用',name:'スイッチとコンセント（同じボックス）',
+  mission:'スイッチとコンセントが同じボックスに入っています。ランプ イ はスイッチで点滅、コンセントは常に使えるようにします。',
+  hint:'ボックスへの3心ケーブルは、黒＝電源（非接地側）、白＝接地側、赤＝帰り線。電源の黒はスイッチとコンセントの両方に必要なので、黒の渡り線を使います。',
+  devices:[P,J,{id:'A',type:'lamp',name:'イ'},{id:'S1',type:'sw1',name:'イ',tag:'イ',box:'B1'},{id:'C',type:'outlet',box:'B1'}],
+  pos:{w:{...PW,A:[470,88],S1:[380,620],C:[570,616]},t:{...PT,A:[330,88],S1:[250,900],C:[440,896]}},
+  cables:[{f:'P',t:'J',a:['P.L>J.j1','P.N>J.j5']},{f:'J',t:'A',a:['J.j2>A.X','J.j5>A.W']},{f:'J',t:'S1',a:['J.j1>S1.1','J.j5>C.W','J.j2>S1.2']}],
+  jumpers:['S1.1~C.X~k'],
+  req:[{load:'A',kind:'follow',sw:'S1',text:'スイッチ イ でランプ イ が点滅する'},{load:'C',kind:'always',text:'コンセントはスイッチに関係なく常に通電している'}]},
  {id:'s7',short:'表示灯',name:'確認表示灯（同時点滅）',
-  mission:'スイッチの横の確認表示灯（パイロットランプ）を、ランプ イ と同時に点滅させます。',
-  hint:'確認表示灯をランプと並列に（ランプと同じ2点の間に）つなぐと、ランプと同時に点滅します。',
-  devices:[P,J,{id:'A',type:'lamp',x:470,y:105,name:'イ'},{id:'S1',type:'sw1',x:380,y:515,name:'イ',tag:'イ'},{id:'PL',type:'pilot',x:570,y:515,tag:'表示灯'}],
-  req:[{load:'A',kind:'follow',sw:'S1',text:'スイッチ イ でランプ イ が点滅する'},{load:'PL',kind:'follow',sw:'S1',text:'確認表示灯はランプと同時に点灯・消灯する'}],
-  answer:'P.N-J.j1-w J.j1-A.W-w J.j1-PL.a-w P.L-J.j4-k J.j4-S1.1-k S1.2-J.j5-r J.j5-A.X-r J.j5-PL.b-r'},
+  mission:'スイッチと同じボックスの確認表示灯（パイロットランプ）を、ランプ イ と同時に点滅させます。',
+  hint:'確認表示灯はランプと並列に、つまり「帰り線」と「接地側」の間につなぎます。帰り線は渡り線でスイッチから分けます。',
+  devices:[P,J,{id:'A',type:'lamp',name:'イ'},{id:'S1',type:'sw1',name:'イ',tag:'イ',box:'B1'},{id:'PL',type:'pilot',tag:'表示灯',box:'B1'}],
+  pos:{w:{...PW,A:[470,88],S1:[400,620],PL:[550,620]},t:{...PT,A:[330,88],S1:[250,900],PL:[410,900]}},
+  cables:[{f:'P',t:'J',a:['P.L>J.j1','P.N>J.j5']},{f:'J',t:'A',a:['J.j2>A.X','J.j5>A.W']},{f:'J',t:'S1',a:['J.j1>S1.1','J.j5>PL.a','J.j2>S1.2']}],
+  jumpers:['S1.2~PL.b~r'],
+  req:[{load:'A',kind:'follow',sw:'S1',text:'スイッチ イ でランプ イ が点滅する'},{load:'PL',kind:'follow',sw:'S1',text:'確認表示灯はランプと同時に点灯・消灯する'}]},
  {id:'s8',short:'総合',name:'総合問題',
   mission:'ランプ イ は3路スイッチ2か所で、ランプ ロ は片切スイッチ ロ で点滅させ、コンセントは常に通電させます。',
-  hint:'Nは接続点から3つの負荷すべてのW端子へ。Lは左の3路の0・片切スイッチ・コンセントへ分岐します。',
-  devices:[P,J,{id:'A',type:'lamp',x:340,y:105,name:'イ'},{id:'B',type:'lamp',x:600,y:105,name:'ロ'},
-    {id:'S1',type:'sw3',x:230,y:515,name:'イ',tag:'イ・左'},{id:'S3',type:'sw1',x:470,y:515,name:'ロ',tag:'ロ'},{id:'S2',type:'sw3',x:700,y:515,name:'イ',tag:'イ・右'},
-    {id:'C',type:'outlet',x:900,y:300}],
-  req:[{load:'A',kind:'toggle',sws:['S1','S2'],text:'どちらの3路スイッチでもランプ イ が切り替わる'},{load:'B',kind:'follow',sw:'S3',text:'スイッチ ロ でランプ ロ が点滅する'},{load:'C',kind:'always',text:'コンセントは常に通電している'}],
-  answer:'P.N-J.j1-w J.j1-A.W-w J.j1-B.W-w J.j1-C.W-w P.L-J.j4-k J.j4-S1.0-k J.j4-S3.1-k J.j4-C.X-k S1.1-J.j2-r J.j2-S2.1-r S1.3-J.j3-k J.j3-S2.3-k S2.0-J.j5-r J.j5-A.X-r S3.2-J.j6-r J.j6-B.X-r'}
+  hint:'電源の黒は4本（左の3路の0・片切ロ・コンセント・電源）、白も4本（ランプ2つ・コンセント・電源）が1つの接続点に集まります。スリーブは「小」です。',
+  devices:[P,J,{id:'A',type:'lamp',name:'イ'},{id:'B',type:'lamp',name:'ロ'},
+    {id:'S1',type:'sw3',name:'イ',tag:'イ・左'},{id:'S3',type:'sw1',name:'ロ',tag:'ロ'},{id:'S2',type:'sw3',name:'イ',tag:'イ・右'},{id:'C',type:'outlet'}],
+  pos:{w:{...PW,A:[330,88],B:[610,88],S1:[220,620],S3:[470,620],S2:[720,620],C:[900,340]},t:{...PT,A:[190,88],B:[450,88],S1:[95,900],S3:[320,900],S2:[540,900],C:[545,400]}},
+  cables:[{f:'P',t:'J',a:['P.L>J.j1','P.N>J.j5']},{f:'J',t:'A',a:['J.j3>A.X','J.j5>A.W']},{f:'J',t:'B',a:['J.j4>B.X','J.j5>B.W']},
+    {f:'J',t:'S1',a:['J.j1>S1.0','J.j2>S1.1','J.j6>S1.3']},{f:'J',t:'S3',a:['J.j1>S3.1','J.j4>S3.2']},
+    {f:'J',t:'S2',a:['J.j3>S2.0','J.j2>S2.1','J.j6>S2.3']},{f:'J',t:'C',a:['J.j1>C.X','J.j5>C.W']}],
+  req:[{load:'A',kind:'toggle',sws:['S1','S2'],text:'どちらの3路スイッチでもランプ イ が切り替わる'},{load:'B',kind:'follow',sw:'S3',text:'スイッチ ロ でランプ ロ が点滅する'},{load:'C',kind:'always',text:'コンセントは常に通電している'}]}
 ];
+LEVELS.forEach(L=>{L.cab=L.cables.map((c,i)=>({id:'c'+i,f:c.f,t:c.t,n:c.a.length,cols:CORE[c.a.length],ans:c.a}));L.jumpers=L.jumpers||[];});
 
 /* ---------- 保存（この端末のみ） ---------- */
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){}}
-const saved=load(); saved.stars=saved.stars||{}; saved.wires=saved.wires||{};
+const saved=load(); saved.stars=saved.stars||{}; saved.links=saved.links||{};
 
 let cur=Math.max(0,Math.min(+saved.cur||0,LEVELS.length-1));
-let wires=[],hist=[],sw={},color=COLORS[saved.color]?saved.color:'k',sel=null,drag=null,probe=false;
+let links=[],hist=[],sw={},color=COLORS[saved.color]?saved.color:'k',sel=null,drag=null,probe=false;
 let usedAnswer=false,lastResult=null,popStars=false,nextId=1,suppressClick=false,hintOpen=false;
 
-/* ---------- 盤面の配置（横長＝各ステージの定義どおり／縦長＝スマホ縦画面用に自動配置） ---------- */
+/* ---------- 盤面の配置（横長／スマホ縦画面用） ---------- */
 const mq=window.matchMedia('(max-width: 640px)');
-const VB={wide:[1000,620],tall:[600,900]};
-let mode=mq.matches?'tall':'wide',layout={};
-function computeLayout(){
-  const m={},D=lv().devices;
-  if(mode==='wide')D.forEach(d=>m[d.id]={x:d.x,y:d.y});
-  else{
-    const lamps=D.filter(d=>d.type==='lamp'),bottom=D.filter(d=>SWT[d.type]||d.type==='pilot');
-    const lx={1:[300],2:[170,430]},bx={1:[300],2:[180,420],3:[100,300,500]};
-    lamps.forEach((d,i)=>m[d.id]={x:lx[lamps.length][i],y:105});
-    bottom.forEach((d,i)=>m[d.id]={x:bx[bottom.length][i],y:790});
-    D.forEach(d=>{if(d.type==='power')m[d.id]={x:75,y:420};if(d.type==='jb')m[d.id]={x:300,y:420};if(d.type==='outlet')m[d.id]={x:525,y:420};});
-  }
-  layout=m;
-}
-const at=d=>layout[d.id];
-
-/* ---------- 回路モデル ---------- */
+const VB={w:[1000,720],t:[600,1000]};
+let mode=mq.matches?'t':'w',layout={},geo={stub:{},cab:[]};
 const lv=()=>LEVELS[cur];
 const dev=id=>lv().devices.find(d=>d.id===id);
-function validTerm(id){const i=id.indexOf('.');const d=dev(id.slice(0,i));return !!(d&&DEV[d.type].t[id.slice(i+1)]);}
-function termPos(id){const i=id.indexOf('.');const d=dev(id.slice(0,i)),p=at(d);const t=DEV[d.type].t[id.slice(i+1)];return [p.x+t[0],p.y+t[1],t[2],t[3]];}
+const at=d=>layout[d.id];
+const jbs=()=>mode==='t'?1.25:1;   /* 縦画面ではジョイントボックスを広げて押しやすく */
+const boxOf=d=>d.box||d.id;
+const isStub=id=>id.indexOf(':')>0;
+function computeLayout(){
+  const m={},p=lv().pos[mode];
+  for(const id in p)m[id]={x:p[id][0],y:p[id][1]};
+  layout=m;computeGeo();
+}
+function computeGeo(){
+  const G={stub:{},cab:[]},L=lv(),cnt={},idx={};
+  const portOf=d=>{const p=at(d),q=DEV[d.type].port;return [p.x+q[0],p.y+q[1]];};
+  L.cab.forEach(c=>{const k=c.f+'|'+c.t;cnt[k]=(cnt[k]||0)+1;});
+  L.cab.forEach(c=>{
+    const k=c.f+'|'+c.t,j=idx[k]=(idx[k]===undefined?0:idx[k]+1),off=(j-(cnt[k]-1)/2)*54;
+    const df=dev(c.f),dt=dev(c.t),cf=at(df),ct=at(dt);
+    let A=df.type==='jb'?null:portOf(df),B=dt.type==='jb'?null:portOf(dt);
+    const rA=A||[cf.x,cf.y],rB=B||[ct.x,ct.y];
+    let ux=rB[0]-rA[0],uy=rB[1]-rA[1],m=Math.hypot(ux,uy)||1;ux/=m;uy/=m;
+    const RG=RING*jbs();
+    if(!A)A=[cf.x+ux*RG,cf.y+uy*RG];
+    if(!B)B=[ct.x-ux*RG,ct.y-uy*RG];
+    ux=B[0]-A[0];uy=B[1]-A[1];m=Math.hypot(ux,uy)||1;ux/=m;uy/=m;
+    const px=-uy,py=ux;
+    A=[A[0]+px*off,A[1]+py*off];B=[B[0]+px*off,B[1]+py*off];
+    const sA=[A[0]+ux*16,A[1]+uy*16],sB=[B[0]-ux*16,B[1]-uy*16];
+    const cond=[];
+    for(let i=0;i<c.n;i++){
+      const s=(i-(c.n-1)/2)*SPREAD;
+      const a=[A[0]+px*s,A[1]+py*s,-ux,-uy],b=[B[0]+px*s,B[1]+py*s,ux,uy];
+      G.stub[c.id+':'+i+':a']=a;G.stub[c.id+':'+i+':b']=b;
+      cond.push({col:c.cols[i],a,b,ea:[sA[0]+px*s*.3,sA[1]+py*s*.3],eb:[sB[0]+px*s*.3,sB[1]+py*s*.3]});
+    }
+    const mid=[(sA[0]+sB[0])/2,(sA[1]+sB[1])/2],lp=Math.abs(px)>Math.abs(py)?(px>0?1:-1):(py>0?1:-1);
+    G.cab.push({c,sA,sB,cond,label:[mid[0]+px*15*lp+(Math.abs(px)>.5?(px*lp>0?4:-4):0),mid[1]+py*15*lp+4],anchor:Math.abs(px)>.5?(px*lp>0?'start':'end'):'middle'});
+  });
+  geo=G;
+}
+
+/* ---------- 名前 ---------- */
 function tagOf(d){return d.tag||d.name||'';}
 function devName(d){
   if(d.type==='lamp')return 'ランプ '+tagOf(d);
   if(d.type==='outlet')return 'コンセント';
   if(d.type==='pilot')return '確認表示灯';
-  if(SWT[d.type])return 'スイッチ '+tagOf(d)+'（'+SWT[d.type]+'）';
-  return d.id;
+  if(d.type==='power')return '電源';
+  if(d.type==='jb')return 'ジョイントボックス';
+  return 'スイッチ '+tagOf(d)+'（'+SWT[d.type]+'）';
 }
 function termName(id){
+  if(isStub(id)){const [c,i,e]=id.split(':'),cb=lv().cab.find(x=>x.id===c);return cableName(cb)+'の'+COLORS[cb.cols[+i]].name+'線（'+devName(dev(e==='a'?cb.f:cb.t))+'側）';}
   const i=id.indexOf('.'),d=dev(id.slice(0,i)),t=id.slice(i+1);
   if(d.type==='power')return t==='L'?'電源L':'電源N';
   if(d.type==='jb')return '接続点'+t.slice(1);
@@ -390,12 +461,30 @@ function termName(id){
   if(d.type==='pilot')return '表示灯 端子'+(t==='a'?'1':'2');
   return 'スイッチ'+tagOf(d)+' '+t;
 }
+function cableName(c){const s=d=>d.type==='jb'?'JB':devName(d).replace(/（.*）/,'');return s(dev(c.f))+'–'+s(dev(c.t))+'間 VVF1.6-'+c.n+'C';}
+function stubColor(id){const [c,i]=id.split(':');return lv().cab.find(x=>x.id===c).cols[+i];}
+function stubLoc(id){const [c,,e]=id.split(':'),cb=lv().cab.find(x=>x.id===c);return boxOf(dev(e==='a'?cb.f:cb.t));}
+function termLoc(id){return boxOf(dev(id.slice(0,id.indexOf('.'))));}
+function termPos(id){
+  if(isStub(id))return geo.stub[id];
+  const i=id.indexOf('.'),d=dev(id.slice(0,i)),p=at(d),t=DEV[d.type].t[id.slice(i+1)],k=d.type==='jb'?jbs():1;
+  return [p.x+t[0]*k,p.y+t[1]*k,t[2],t[3]];
+}
+function validId(id){
+  if(isStub(id))return !!geo.stub[id];
+  const i=id.indexOf('.'),d=dev(id.slice(0,i));return !!(d&&DEV[d.type].t[id.slice(i+1)]);
+}
+const linkColor=l=>l.k==='att'?stubColor(l.s):l.c;
+const linkEnds=l=>l.k==='att'?[l.s,l.t]:[l.a,l.b];
+const countAt=id=>links.filter(l=>linkEnds(l).includes(id)).length;
 
-function analyze(ws,st){
+/* ---------- 回路モデル ---------- */
+function analyze(ls,st){
   const parent={};
   const f=x=>{if(parent[x]===undefined)parent[x]=x;while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x];}return x;};
   const u=(a,b)=>{a=f(a);b=f(b);if(a!==b)parent[a]=b;};
-  for(const w of ws)u(w.a,w.b);
+  for(const c of lv().cab)for(let i=0;i<c.n;i++)u(c.id+':'+i+':a',c.id+':'+i+':b');
+  for(const l of ls){const [a,b]=linkEnds(l);u(a,b);}
   for(const d of lv().devices){
     const s=st[d.id]||0,p=d.id+'.';
     if(d.type==='sw1'&&s)u(p+'1',p+'2');
@@ -409,11 +498,12 @@ function analyze(ws,st){
   }
   return {f,L,N,short,powered};
 }
+function sleeveOf(n){return n<=1?null:n===2?'小○':n<=4?'小':n<=6?'中':'×';}
 
 function judge(){
   const L=lv(),sws=L.devices.filter(d=>SWT[d.type]),loads=L.devices.filter(d=>LOADS[d.type]);
   const rows=[];
-  for(let m=0;m<(1<<sws.length);m++){const st={};sws.forEach((d,i)=>st[d.id]=(m>>i)&1);rows.push({st,r:analyze(wires,st)});}
+  for(let m=0;m<(1<<sws.length);m++){const st={};sws.forEach((d,i)=>st[d.id]=(m>>i)&1);rows.push({st,r:analyze(links,st)});}
   const anyShort=rows.some(x=>x.r.short);
   const expect={};
   for(const q of L.req){
@@ -424,28 +514,41 @@ function judge(){
   let mism=0;
   rows.forEach((x,i)=>loads.forEach(d=>{if(!x.r.short&&!!x.r.powered[d.id]!==expect[d.id][i])mism++;}));
   const funcOK=!anyShort&&mism===0;
-  const pol=[],col=[];
+  const wk=[],col=[];
+  /* 結線・極性 */
+  const free=Object.keys(geo.stub).filter(s=>!links.some(l=>l.k==='att'&&l.s===s));
+  if(free.length)wk.push('未結線の心線が '+free.length+' 本あります（例：'+termName(free[0])+'）。');
+  for(const t in DEV.jb.t){const n=countAt('J.'+t);if(n===1)wk.push('接続点'+t.slice(1)+' に電線が1本しかありません。');}
   if(!anyShort){
     for(const d of sws){
-      const bad=rows.some(x=>Object.keys(DEV[d.type].t).some(t=>x.r.f(d.id+'.'+t)===x.r.N));
-      if(bad)pol.push(devName(d)+' が接地側（N）につながっています。スイッチは非接地側（L）を開閉します。');
+      if(rows.some(x=>Object.keys(DEV[d.type].t).some(t=>x.r.f(d.id+'.'+t)===x.r.N)))
+        wk.push(devName(d)+' が接地側（N）につながっています。スイッチは非接地側（L）を開閉します。');
     }
     for(const d of loads)if(DEV[d.type].t.W&&!rows.every(x=>x.r.f(d.id+'.W')===x.r.N))
-      pol.push(devName(d)+' のW端子が接地側（N）につながっていません。');
+      wk.push(devName(d)+' のW端子が接地側（N）につながっていません。');
+    /* 電線の色（施工条件） */
+    const wires=[];
+    for(const c of L.cab)for(let i=0;i<c.n;i++)wires.push({id:c.id+':'+i+':a',c:c.cols[i],name:cableName(c)+'の'+COLORS[c.cols[i]].name+'線'});
+    for(const l of links)if(l.k==='jmp')wires.push({id:l.a,c:l.c,name:'渡り線（'+termName(l.a)+'–'+termName(l.b)+'）'});
     for(const w of wires){
-      const g=rows.every(x=>x.r.f(w.a)===x.r.N),nm=termName(w.a)+' – '+termName(w.b);
-      if(g&&w.c!=='w')col.push(nm+'：接地側の電線は白にします（今は'+COLORS[w.c].name+'）。');
-      if(!g&&w.c==='w')col.push(nm+'：白線が非接地側に使われています。');
+      const g=rows.every(x=>x.r.f(w.id)===x.r.N),hot=rows.every(x=>x.r.f(w.id)===x.r.L);
+      if(g&&w.c!=='w')col.push(w.name+'：接地側なので白にします（施工条件1）。');
+      if(hot&&w.c!=='k')col.push(w.name+'：電源から点滅器・コンセントまでの非接地側なので黒にします（施工条件2）。');
+    }
+    for(const l of links){
+      const ends=linkEnds(l),wt=ends.find(e=>!isStub(e)&&/\.W$/.test(e));
+      if(wt&&linkColor(l)!=='w')col.push(termName(wt)+'に'+COLORS[linkColor(l)].name+'線がつながっています。W端子には白（施工条件3）。');
     }
   }
-  const stars=funcOK?(pol.length?1:(col.length?2:3)):0;
-  return {rows,sws,loads,expect,anyShort,mism,funcOK,pol,col,stars};
+  const sleeves={};
+  for(const t in DEV.jb.t){const s=sleeveOf(countAt('J.'+t));if(s)sleeves[s]=(sleeves[s]||0)+1;}
+  const stars=funcOK?(wk.length?1:(col.length?2:3)):0;
+  return {rows,sws,loads,expect,anyShort,mism,funcOK,wk,col,stars,sleeves};
 }
 
 /* ---------- 描画 ---------- */
-function wirePath(a,b,i){
-  const A=termPos(a),B=termPos(b);
-  const d=Math.hypot(B[0]-A[0],B[1]-A[1]),k=Math.min(130,d*0.42)+(i%3)*10;
+function wirePath(A,B,i){
+  const d=Math.hypot(B[0]-A[0],B[1]-A[1]),k=Math.min(70,d*0.42)+(i%3)*5;
   const dir=(P,Q)=>{if(P[2]||P[3])return [P[2],P[3]];const dx=Q[0]-P[0],dy=Q[1]-P[1],m=Math.hypot(dx,dy)||1;return [dx/m,dy/m];};
   const da=dir(A,B),db=dir(B,A);
   return 'M'+A[0]+','+A[1]+' C'+(A[0]+da[0]*k)+','+(A[1]+da[1]*k)+' '+(B[0]+db[0]*k)+','+(B[1]+db[1]*k)+' '+B[0]+','+B[1];
@@ -492,8 +595,9 @@ function drawDevice(d,st,an){
       '<text y="70" text-anchor="middle" class="ostat'+(on?' on':'')+'">'+(on?'通電中':'停電')+'</text>');
   }
   case 'jb':
-    return g('<circle r="96" class="jb"/><text y="-68" text-anchor="middle" class="dsub">ジョイントボックス</text>'+
-      ['1','2','3','4','5','6'].map((n,i)=>{const t=DEV.jb.t['j'+n];return '<text x="'+(t[0]+12)+'" y="'+(t[1]+(i<3?-11:22))+'" class="dsub">'+n+'</text>';}).join(''));
+    return g('<circle r="'+(92*jbs())+'" class="jb"/>'+
+      Object.keys(DEV.jb.t).map(k=>{const t=DEV.jb.t[k],n=countAt('J.'+k),sv=sleeveOf(n),x=t[0]*jbs(),y=t[1]*jbs();
+        return sv?'<text x="'+x+'" y="'+(y<0?y-12:y+20)+'" text-anchor="middle" class="sleeve">'+sv+'</text>':'';}).join(''));
   default:{
     const T=DEV[d.type].t;let inner='';
     for(const k in T){inner+='<line x1="'+T[k][0]+'" y1="-82" x2="'+T[k][0]+'" y2="-60" class="lead"/><text x="'+(T[k][0]+5)+'" y="-46" class="tlab">'+k+'</text>';}
@@ -512,7 +616,7 @@ function drawDevice(d,st,an){
               :'<path d="M-45,-30 Q-15,8 15,-30" class="lever"/><path d="M-15,-30 Q15,38 45,-30" class="lever"/>';
       st_=s?'1–4・2–3':'1–3・2–4';
     }
-    const lbl=devName(d)+' 現在 '+st_+'（クリックで切り替え）';
+    const lbl=devName(d)+' 現在 '+st_+'（タップで切り替え）';
     return g('<rect x="-56" y="-60" width="112" height="120" rx="10" class="body"/>'+inner+
       '<text y="47" text-anchor="middle" class="sstate">'+st_+'</text>'+
       '<text y="84" text-anchor="middle" class="dname">'+d.name+'（'+SWT[d.type]+'）</text>',
@@ -520,35 +624,56 @@ function drawDevice(d,st,an){
   }}
 }
 
+function termEl(id,x,y,cls,an,fill){
+  let pm='';
+  if(probe&&!an.short){const c=an.f(id);if(c===an.L)pm='<circle cx="'+x+'" cy="'+y+'" r="14" class="pL"/>';else if(c===an.N)pm='<circle cx="'+x+'" cy="'+y+'" r="14" class="pN"/>';}
+  const r=cls.includes('stub')?7.5:cls.includes('node')?7:9;
+  return '<g class="term '+cls+(sel===id?' sel':'')+'" data-term="'+id+'" tabindex="0" role="button" aria-label="'+termName(id)+'">'+
+    pm+'<circle cx="'+x+'" cy="'+y+'" r="18" class="hit"/><circle cx="'+x+'" cy="'+y+'" r="'+(r+6)+'" class="ring"/>'+
+    '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" class="screw"'+(fill?' style="fill:'+fill+'"':'')+'/>'+
+    (cls===''?'<line x1="'+(x-4.5)+'" y1="'+(y-4.5)+'" x2="'+(x+4.5)+'" y2="'+(y+4.5)+'" class="slot"/>':'')+'</g>';
+}
+
 function renderBoard(){
   const keep=document.activeElement&&svg.contains(document.activeElement)?document.activeElement:null;
   const focusKey=keep?(keep.dataset.term?'[data-term="'+keep.dataset.term+'"]':keep.dataset.sw?'[data-sw="'+keep.dataset.sw+'"]':null):null;
-  const L=lv(),an=analyze(wires,sw),[VW,VH]=VB[mode];
+  const L=lv(),an=analyze(links,sw),[VW,VH]=VB[mode];
   svg.setAttribute('viewBox','0 0 '+VW+' '+VH);
-  svg.classList.toggle('wide',mode==='wide');
+  svg.classList.toggle('wide',mode==='w');
   let h='<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern>'+
     '<radialGradient id="glow"><stop offset="0" stop-color="var(--lit)" stop-opacity=".8"/><stop offset="1" stop-color="var(--lit)" stop-opacity="0"/></radialGradient>'+
     '<radialGradient id="pglow"><stop offset="0" stop-color="var(--pilot)" stop-opacity=".7"/><stop offset="1" stop-color="var(--pilot)" stop-opacity="0"/></radialGradient></defs>'+
     '<rect width="'+VW+'" height="'+VH+'" fill="url(#grid)"/>';
+  /* ボックス（複数の器具が入るもの） */
+  const groups={};
+  L.devices.forEach(d=>{if(d.box)(groups[d.box]=groups[d.box]||[]).push(at(d));});
+  for(const k in groups){const ps=groups[k],x1=Math.min(...ps.map(p=>p.x))-72,x2=Math.max(...ps.map(p=>p.x))+72,y1=Math.min(...ps.map(p=>p.y))-96,y2=Math.max(...ps.map(p=>p.y))+74;
+    h+='<rect x="'+x1+'" y="'+y1+'" width="'+(x2-x1)+'" height="'+(y2-y1)+'" rx="12" class="boxline"/>';}
   for(const d of L.devices)h+=drawDevice(d,sw,an);
-  wires.forEach((w,i)=>{
-    const p=wirePath(w.a,w.b,i);
-    h+='<g class="wire" data-wire="'+w.id+'" tabindex="0" role="button" aria-label="'+COLORS[w.c].name+'線 '+termName(w.a)+'から'+termName(w.b)+'（Enterで外す）">'+
-      '<path d="'+p+'" class="whit"/><path d="'+p+'" class="wedge"/><path d="'+p+'" class="wcore" stroke="'+COLORS[w.c].v+'"/></g>';
+  /* ケーブル */
+  for(const g of geo.cab){
+    h+='<line x1="'+g.sA[0]+'" y1="'+g.sA[1]+'" x2="'+g.sB[0]+'" y2="'+g.sB[1]+'" class="sheathe"/><line x1="'+g.sA[0]+'" y1="'+g.sA[1]+'" x2="'+g.sB[0]+'" y2="'+g.sB[1]+'" class="sheath"/>';
+    for(const c of g.cond)for(const [e,s] of [[c.ea,c.a],[c.eb,c.b]])
+      h+='<line x1="'+e[0]+'" y1="'+e[1]+'" x2="'+s[0]+'" y2="'+s[1]+'" class="condE"/><line x1="'+e[0]+'" y1="'+e[1]+'" x2="'+s[0]+'" y2="'+s[1]+'" class="cond" stroke="'+COLORS[c.col].v+'"/>';
+    h+='<text x="'+g.label[0]+'" y="'+g.label[1]+'" text-anchor="'+g.anchor+'" class="clabel">VVF1.6-'+g.c.n+'C</text>';
+  }
+  /* 結線（心線→端子、渡り線） */
+  links.forEach((l,i)=>{
+    const [a,b]=linkEnds(l),p=wirePath(termPos(a),termPos(b),i),c=COLORS[linkColor(l)];
+    h+='<g class="link '+l.k+'" data-link="'+l.id+'" tabindex="0" role="button" aria-label="'+(l.k==='jmp'?c.name+'の渡り線 ':'')+termName(a)+' から '+termName(b)+'（Enterで外す）">'+
+      '<path d="'+p+'" class="whit"/><path d="'+p+'" class="wedge"/><path d="'+p+'" class="wcore" stroke="'+c.v+'"/></g>';
   });
-  for(const d of L.devices){
-    for(const t in DEV[d.type].t){
-      const id=d.id+'.'+t,[x,y]=termPos(id),node=d.type==='jb';
-      let pm='';
-      if(probe&&!an.short){const c=an.f(id);if(c===an.L)pm='<circle cx="'+x+'" cy="'+y+'" r="15" class="pL"/>';else if(c===an.N)pm='<circle cx="'+x+'" cy="'+y+'" r="15" class="pN"/>';}
-      h+='<g class="term'+(node?' node':'')+(sel===id?' sel':'')+'" data-term="'+id+'" tabindex="0" role="button" aria-label="'+termName(id)+'">'+
-        pm+'<circle cx="'+x+'" cy="'+y+'" r="21" class="hit"/><circle cx="'+x+'" cy="'+y+'" r="16" class="ring"/>'+
-        '<circle cx="'+x+'" cy="'+y+'" r="'+(node?8:9)+'" class="screw"/>'+
-        (node?'':'<line x1="'+(x-4.5)+'" y1="'+(y-4.5)+'" x2="'+(x+4.5)+'" y2="'+(y+4.5)+'" class="slot"/>')+'</g>';
-    }
+  /* 端子・接続点・心線の端 */
+  for(const d of L.devices)for(const t in DEV[d.type].t){
+    const id=d.id+'.'+t,[x,y]=termPos(id);
+    h+=termEl(id,x,y,d.type==='jb'?'node':'',an);
+  }
+  for(const s in geo.stub){
+    const [x,y]=geo.stub[s],free=!links.some(l=>l.k==='att'&&l.s===s);
+    h+=termEl(s,x,y,'stub'+(free?' free':''),an,COLORS[stubColor(s)].v);
   }
   if(an.short)h+='<g class="banner" pointer-events="none"><rect x="'+(VW/2-210)+'" y="4" width="420" height="32" rx="6"/><text x="'+(VW/2)+'" y="26" text-anchor="middle">短絡しています。ブレーカーがトリップしました</text></g>';
-  h+='<path id="rubber" class="rubber" d="" stroke="'+COLORS[color].v+'"/>';
+  h+='<path id="rubber" class="rubber" d=""/>';
   svg.innerHTML=h;
   if(focusKey){const el=svg.querySelector(focusKey);if(el)el.focus({preventScroll:true});}
   renderLive(an);
@@ -556,13 +681,14 @@ function renderBoard(){
 
 function renderLive(an){
   const el=$('#live');
-  if(an.short){el.innerHTML='<span class="bad">短絡中：LとNが負荷を通らずにつながっています。電線を外すか、スイッチを切り替えてください。</span>';return;}
+  if(an.short){el.innerHTML='<span class="bad">短絡中：LとNが負荷を通らずにつながっています。結線を外すか、スイッチを切り替えてください。</span>';return;}
+  const free=Object.keys(geo.stub).filter(s=>!links.some(l=>l.k==='att'&&l.s===s)).length;
   const parts=lv().devices.filter(d=>LOADS[d.type]).map(d=>{
     const on=an.powered[d.id],nm=d.type==='lamp'?'ランプ '+tagOf(d):d.type==='outlet'?'コンセント':'確認表示灯';
     const word=d.type==='outlet'?(on?'通電':'停電'):(on?'点灯':'消灯');
     return nm+'：<span class="'+(on?'on':'off')+'">'+word+'</span>';
   });
-  el.innerHTML=parts.join('　／　');
+  el.innerHTML=parts.join('　／　')+'　<span class="off">（未結線の心線 '+free+' 本）</span>';
 }
 
 function renderLevels(){
@@ -574,9 +700,12 @@ function renderLevels(){
 }
 
 function renderMission(){
-  const L=lv();
+  const L=lv(),m={};
+  L.cab.forEach(c=>{m[c.n]=(m[c.n]||0)+1;});
   $('#mission').innerHTML='<div class="eyebrow">STAGE '+(cur+1)+' / '+LEVELS.length+'</div><h2>'+L.name+'</h2><p>'+L.mission+'</p>'+
     '<ul class="reqs">'+L.req.map(q=>'<li>'+q.text+'</li>').join('')+'</ul>'+
+    '<div class="mat"><b>支給材料</b><ul>'+Object.keys(m).map(n=>'<li><span>VVF1.6-'+n+'C（'+CORE[n].map(c=>COLORS[c].name).join('・')+'）</span><span>'+m[n]+' 本</span></li>').join('')+
+    '<li><span>渡り線（色は選択）</span><span>必要なだけ</span></li></ul></div>'+
     '<div class="mbtns"><button type="button" class="btn" id="hintBtn" aria-expanded="'+hintOpen+'">'+(hintOpen?'ヒントを隠す':'ヒント')+'</button>'+
     '<button type="button" class="btn" id="ansBtn">解答例を表示</button></div>'+
     '<p class="hint" id="hint"'+(hintOpen?'':' hidden')+'>'+L.hint+'</p>'+
@@ -586,29 +715,31 @@ function renderMission(){
 function renderResult(){
   const el=$('#result'),R=lastResult,n=lv().devices.filter(d=>SWT[d.type]).length;
   if(!R){
-    el.innerHTML='<h3>判定</h3><p class="note" style="margin:0">「判定する」を押すと、スイッチの組み合わせ '+(1<<n)+' 通りすべてで点灯を確かめ、極性と電線の色も採点します。</p>';
+    el.innerHTML='<h3>判定</h3><p class="note" style="margin:0">「判定する」を押すと、スイッチの組み合わせ '+(1<<n)+' 通りすべてで点灯を確かめ、未結線・極性・電線の色（施工条件）も採点します。</p>';
     return;
   }
-  const verdict=!wires.length?'まだ電線がつながっていません。':
+  const verdict=!links.length?'まだ何もつながっていません。':
     R.anyShort?'短絡します。L（黒）とN（白）が、ランプなどの負荷を通らずにつながる組み合わせがあります。':
     R.mism?'動作が条件と合いません。下の表で赤いマスを確認してください。':
-    R.stars===1?'動作はOKです。極性に欠陥があります。':
-    R.stars===2?'動作と極性はOKです。電線の色を直せば満点です。':'欠陥なし。満点です。';
+    R.stars===1?'動作はOKです。結線か極性に欠陥があります。':
+    R.stars===2?'動作と結線はOKです。施工条件の電線の色を直せば満点です。':'欠陥なし。満点です。';
   const mark=(ok,na)=>na?'<span class="na">—</span>':ok?'<span class="ok">○</span>':'<span class="ng">×</span>';
   let h='<h3>判定</h3><div class="stars'+(popStars?' pop':'')+'" aria-label="星'+R.stars+'個">'+[0,1,2].map(i=>'<span class="'+(i<R.stars?'on':'')+'">★</span>').join('')+'</div>'+
     '<p class="verdict">'+verdict+'</p>'+
     '<ul class="checks"><li>'+mark(R.funcOK)+'<span>動作（短絡なし・条件どおり点灯）</span></li>'+
-    '<li>'+mark(!R.pol.length,!R.funcOK)+'<span>極性（W端子は接地側、スイッチは非接地側）</span></li>'+
-    '<li>'+mark(!R.col.length,!R.funcOK)+'<span>電線の色（接地側は白、白は接地側だけ）</span></li></ul>';
-  const defs=R.funcOK?R.pol.concat(R.col):[];
+    '<li>'+mark(!R.wk.length,!R.funcOK)+'<span>結線・極性（未結線なし、W端子は接地側、スイッチは非接地側）</span></li>'+
+    '<li>'+mark(!R.col.length,!R.funcOK)+'<span>電線の色（施工条件 1〜3）</span></li></ul>';
+  const defs=R.funcOK?R.wk.concat(R.col):[];
   if(defs.length)h+='<ul class="defects">'+defs.map(t=>'<li>'+t+'</li>').join('')+'</ul>';
+  const sv=Object.keys(R.sleeves);
+  if(sv.length)h+='<p class="sleeves">リングスリーブ：'+['小○','小','中','×'].filter(k=>R.sleeves[k]).map(k=>(k==='小○'?'小（刻印○）':k==='小'?'小（刻印小）':k==='中'?'中（刻印中）':'7本以上は不可')+' ×'+R.sleeves[k]).join('、')+'</p>';
   const swLabel=(d,v)=>d.type==='sw1'?(v?'ON':'OFF'):d.type==='sw3'?(v?'0–3':'0–1'):(v?'1–4':'1–3');
   h+='<div class="tablewrap"><table><thead><tr>'+R.sws.map(d=>'<th>'+tagOf(d)+'</th>').join('')+R.loads.map(d=>'<th>'+(d.type==='lamp'?'ランプ'+tagOf(d):d.type==='outlet'?'コンセント':'表示灯')+'</th>').join('')+'</tr></thead><tbody>';
   R.rows.forEach((x,i)=>{
     h+='<tr>'+R.sws.map(d=>'<td>'+swLabel(d,x.st[d.id])+'</td>').join('');
     if(x.r.short)h+='<td class="short" colspan="'+R.loads.length+'">短絡</td>';
     else h+=R.loads.map(d=>{const on=!!x.r.powered[d.id],exp=R.expect[d.id][i];
-      return '<td class="'+(on!==exp?'bad':on?'lit':'dark')+'"'+(on!==exp?' title="正しくは'+(exp?'点灯':'消灯')+'"':'')+'>'+(on?'●':'○')+(on!==exp?(exp?' 点灯のはず':' 消灯のはず'):'')+'</td>';}).join('');
+      return '<td class="'+(on!==exp?'bad':on?'lit':'dark')+'">'+(on?'●':'○')+(on!==exp?(exp?' 点灯のはず':' 消灯のはず'):'')+'</td>';}).join('');
     h+='</tr>';
   });
   h+='</tbody></table></div><p class="legend">● 点灯・通電　○ 消灯・停電　赤いマスは条件と違う箇所</p>';
@@ -618,40 +749,62 @@ function renderResult(){
   popStars=false;
 }
 
-function renderColor(){
-  document.querySelectorAll('.seg [data-color]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.color===color)));
-  const r=svg.querySelector('#rubber');if(r)r.setAttribute('stroke',COLORS[color].v);
-}
+function renderColor(){document.querySelectorAll('.seg [data-color]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.color===color)));}
 function renderAll(){renderLevels();renderMission();renderBoard();renderResult();renderColor();}
 
 /* ---------- 操作 ---------- */
-function persist(){saved.cur=cur;saved.color=color;saved.wires[lv().id]=wires.map(w=>({a:w.a,b:w.b,c:w.c}));save();}
+function persist(){saved.cur=cur;saved.color=color;saved.links[lv().id]=links.map(({id,...r})=>r);save();}
 function changed(){lastResult=null;persist();renderBoard();renderResult();}
-function pushHist(){hist.push({wires:wires.map(w=>({...w})),usedAnswer});if(hist.length>200)hist.shift();}
+function pushHist(){hist.push({links:links.map(l=>({...l})),usedAnswer});if(hist.length>200)hist.shift();}
 let toastT=0;
-function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},2200);}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},2600);}
+const buzz=()=>{try{if(navigator.vibrate)navigator.vibrate(12);}catch(e){}};
 
-function addWire(a,b){
+function connect(a,b){
   if(a===b)return;
-  if(wires.some(w=>(w.a===a&&w.b===b)||(w.a===b&&w.b===a))){toast('その2つの端子はすでにつながっています');return;}
-  pushHist();wires.push({id:nextId++,a,b,c:color});changed();
-  try{if(navigator.vibrate)navigator.vibrate(12);}catch(e){}
+  const sa=isStub(a),sb=isStub(b);
+  if(sa&&sb){toast('心線どうしは、ジョイントボックスの同じ接続点につないで接続します');return;}
+  if(sa||sb){
+    const s=sa?a:b,t=sa?b:a;
+    if(stubLoc(s)!==termLoc(t)){const ld=lv().devices.find(d=>boxOf(d)===stubLoc(s));toast('この心線は「'+devName(ld)+(ld.box?'のボックス':'')+'」側の端子にしかつなげません');return;}
+    const isNode=t.startsWith('J.'),cap=isNode?NODE_MAX:TERM_MAX;
+    const old=links.find(l=>l.k==='att'&&l.s===s);
+    if(old&&old.t===t)return;
+    if(countAt(t)>=cap){toast(isNode?'1つの接続点には6本までです（中スリーブの上限）':'この端子にはこれ以上つなげません（2本まで）');return;}
+    pushHist();
+    if(old){links=links.filter(l=>l!==old);toast('つなぎ替えました');}
+    links.push({id:nextId++,k:'att',s,t});changed();buzz();return;
+  }
+  const da=dev(a.slice(0,a.indexOf('.'))),db=dev(b.slice(0,b.indexOf('.')));
+  if(da.type==='jb'||db.type==='jb'){toast('接続点には、ケーブルの心線をつなぎます');return;}
+  if(da.type==='power'||db.type==='power'){toast('電源の端子には電源ケーブルの心線をつなぎます');return;}
+  if(boxOf(da)!==boxOf(db)){toast('渡り線は同じボックス内の器具どうしにだけ使えます。離れた器具へはケーブルの心線で');return;}
+  if(da===db){toast('同じ器具の端子どうしはつなげません');return;}
+  if(links.some(l=>l.k==='jmp'&&((l.a===a&&l.b===b)||(l.a===b&&l.b===a)))){toast('その渡り線はもうあります');return;}
+  if(countAt(a)>=TERM_MAX||countAt(b)>=TERM_MAX){toast('この端子にはこれ以上つなげません（2本まで）');return;}
+  pushHist();links.push({id:nextId++,k:'jmp',a,b,c:color});changed();buzz();
 }
-function delWire(id){pushHist();wires=wires.filter(w=>w.id!==id);changed();}
+function delLink(id){pushHist();links=links.filter(l=>l.id!==id);changed();}
 function termClick(id){
-  if(sel&&sel!==id){const a=sel;sel=null;addWire(a,id);renderBoard();return;}
+  if(sel&&sel!==id){const a=sel;sel=null;connect(a,id);renderBoard();return;}
   sel=sel===id?null:id;renderBoard();
 }
 function toggleSw(id){sw[id]=sw[id]?0:1;renderBoard();}
 
 function loadLevel(i){
-  cur=i;
-  wires=(saved.wires[lv().id]||[]).filter(w=>validTerm(w.a)&&validTerm(w.b)&&COLORS[w.c]).map(w=>({id:nextId++,a:w.a,b:w.b,c:w.c}));
+  cur=i;computeLayout();
+  links=(saved.links[lv().id]||[]).filter(l=>l.k==='att'?validId(l.s)&&validId(l.t):(l.k==='jmp'&&validId(l.a)&&validId(l.b)&&COLORS[l.c])).map(l=>({...l,id:nextId++}));
   hist=[];sw={};lv().devices.forEach(d=>{if(SWT[d.type])sw[d.id]=0;});
   sel=null;usedAnswer=false;lastResult=null;hintOpen=false;
-  computeLayout();persist();renderAll();
+  persist();renderAll();
 }
-mq.addEventListener('change',()=>{mode=mq.matches?'tall':'wide';computeLayout();renderBoard();});
+function answerLinks(L){
+  const out=[];
+  L.cab.forEach(c=>c.ans.forEach((s,i)=>{const [x,y]=s.split('>');out.push({id:nextId++,k:'att',s:c.id+':'+i+':a',t:x},{id:nextId++,k:'att',s:c.id+':'+i+':b',t:y});}));
+  L.jumpers.forEach(s=>{const [a,b,c]=s.split('~');out.push({id:nextId++,k:'jmp',a,b,c});});
+  return out;
+}
+mq.addEventListener('change',()=>{mode=mq.matches?'t':'w';computeLayout();renderBoard();});
 
 function svgPt(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
 function rubber(from,e){
@@ -660,14 +813,12 @@ function rubber(from,e){
   const [x,y]=termPos(from),p=svgPt(e);
   r.setAttribute('d','M'+x+','+y+' L'+p.x+','+p.y);
 }
-
-/* 指でも押しやすいように、近くをタップしたら一番近い端子を選ぶ */
+/* 指でも押しやすいように、近くをタップしたら一番近い端子・心線を選ぶ */
 function nearestTerm(e){
-  const p=svgPt(e),R=mode==='tall'?30:24;let best=null,bd=R;
-  for(const d of lv().devices)for(const t in DEV[d.type].t){
-    const id=d.id+'.'+t,[x,y]=termPos(id),dd=Math.hypot(x-p.x,y-p.y);
-    if(dd<bd){bd=dd;best=id;}
-  }
+  const p=svgPt(e),R=mode==='t'?26:20;let best=null,bd=R;
+  const test=(id,x,y)=>{const dd=Math.hypot(x-p.x,y-p.y);if(dd<bd){bd=dd;best=id;}};
+  for(const d of lv().devices)for(const t in DEV[d.type].t){const id=d.id+'.'+t,[x,y]=termPos(id);test(id,x,y);}
+  for(const s in geo.stub){const [x,y]=geo.stub[s];test(s,x,y);}
   return best;
 }
 svg.addEventListener('pointerdown',e=>{
@@ -687,34 +838,34 @@ window.addEventListener('pointerup',e=>{
   const d=drag;drag=null;
   const to=nearestTerm(e);
   suppressClick=true;setTimeout(()=>{suppressClick=false},0);
-  if(d.moved){sel=null;if(to&&to!==d.from)addWire(d.from,to);else renderBoard();}
+  if(d.moved){sel=null;if(to&&to!==d.from)connect(d.from,to);renderBoard();}
   else termClick(d.from);
 });
 window.addEventListener('pointercancel',()=>{drag=null;rubber(null);});
 svg.addEventListener('click',e=>{
   if(suppressClick){suppressClick=false;return;}
   if(e.target.closest('[data-term]'))return;
-  const w=e.target.closest('[data-wire]');if(w){delWire(+w.dataset.wire);return;}
+  const w=e.target.closest('[data-link]');if(w){delLink(+w.dataset.link);return;}
   const s=e.target.closest('[data-sw]');if(s){toggleSw(s.dataset.sw);return;}
   if(sel){sel=null;renderBoard();}
 });
 svg.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&sel){sel=null;renderBoard();return;}
   if(e.key!=='Enter'&&e.key!==' ')return;
-  const t=e.target.closest('[data-term]'),w=e.target.closest('[data-wire]'),s=e.target.closest('[data-sw]');
+  const t=e.target.closest('[data-term]'),w=e.target.closest('[data-link]'),s=e.target.closest('[data-sw]');
   if(t){e.preventDefault();termClick(t.dataset.term);}
-  else if(w){e.preventDefault();delWire(+w.dataset.wire);}
+  else if(w){e.preventDefault();delLink(+w.dataset.link);}
   else if(s){e.preventDefault();toggleSw(s.dataset.sw);}
 });
 
 document.querySelectorAll('.seg [data-color]').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;persist();renderColor();}));
 $('#undo').addEventListener('click',()=>{
   if(!hist.length){toast('これ以上は戻せません');return;}
-  const h=hist.pop();wires=h.wires;usedAnswer=h.usedAnswer;renderMission();changed();
+  const h=hist.pop();links=h.links;usedAnswer=h.usedAnswer;renderMission();changed();
 });
 $('#clear').addEventListener('click',()=>{
-  if(!wires.length)return;
-  pushHist();wires=[];usedAnswer=false;sel=null;renderMission();changed();toast('電線を全部外しました（元に戻せます）');
+  if(!links.length)return;
+  pushHist();links=[];usedAnswer=false;sel=null;renderMission();changed();toast('結線を全部外しました（元に戻せます）');
 });
 $('#probe').addEventListener('change',e=>{probe=e.target.checked;renderBoard();});
 $('#judge').addEventListener('click',()=>{
@@ -728,9 +879,8 @@ $('#levels').addEventListener('click',e=>{const b=e.target.closest('[data-lv]');
 $('#mission').addEventListener('click',e=>{
   if(e.target.id==='hintBtn'){hintOpen=!hintOpen;renderMission();$('#hintBtn').focus();}
   if(e.target.id==='ansBtn'){
-    pushHist();
-    wires=lv().answer.split(' ').map(s=>{const p=s.split('-');return {id:nextId++,a:p[0],b:p[1],c:p[2]};});
-    usedAnswer=true;sel=null;renderMission();changed();toast('解答例を表示しました。スイッチを切り替えて確かめてください');
+    pushHist();links=answerLinks(lv());usedAnswer=true;sel=null;renderMission();changed();
+    toast('解答例を表示しました。スイッチを切り替えて確かめてください');
   }
 });
 $('#result').addEventListener('click',e=>{if(e.target.id==='nextBtn'){loadLevel(cur+1);window.scrollTo({top:0,behavior:'smooth'});}});
