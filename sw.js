@@ -1,5 +1,5 @@
 // スイッチ結線ゲーム オフライン用 Service Worker
-const VERSION = '20261019091124';
+const VERSION = '20261019092256';
 const APP = 'switch-app-' + VERSION;
 const FONTS = 'switch-fonts-v1';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];

@@ -193,6 +193,11 @@ h1{font-family:var(--f-disp); font-weight:400; font-size:clamp(26px,3.6vw,36px);
 #board .banner rect{fill:var(--ng)}
 #board .banner text{fill:var(--on-ng); font-size:15px; font-weight:700}
 #board.arming .term,#board.arming .link,#board.arming .cab,#board.arming .swg{pointer-events:none}
+/* 器具を動かすモード：盤面のドラッグはページのスクロールではなく器具の移動にする */
+#board.layouting{touch-action:none; cursor:grab}
+#board.layouting .term,#board.layouting .link,#board.layouting .cab,#board.layouting .swg{pointer-events:none}
+.btn[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.btn:disabled{opacity:.5; cursor:not-allowed}
 
 .card{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px 18px; min-width:0}
 .eyebrow{font-size:11px; letter-spacing:.16em; color:var(--muted); font-weight:700}
@@ -268,6 +273,7 @@ td.short{background:var(--ng-soft); color:var(--ng); font-weight:700}
           <button type="button" id="col-w" data-color="w"><span class="chip" style="background:var(--w-white)"></span>白</button>
           <button type="button" id="col-r" data-color="r"><span class="chip" style="background:var(--w-red)"></span>赤</button>
         </div>
+        <button type="button" class="btn" id="layBtn" aria-pressed="false">器具を動かす</button>
         <button type="button" class="btn" id="undo">元に戻す</button>
         <button type="button" class="btn" id="clear">全部外す</button>
         <label class="chk"><input type="checkbox" id="probe">検電表示</label>
@@ -275,10 +281,11 @@ td.short{background:var(--ng-soft); color:var(--ng); font-weight:700}
         <button type="button" class="btn primary" id="judge">判定する</button>
       </div>
       <div class="armbar" id="armbar" hidden><span id="armtext"></span><button type="button" class="btn" id="armCancel">やめる</button></div>
+      <div class="armbar" id="laybar" hidden><span id="laytext"></span><button type="button" class="btn" id="layRot">⟳ 90°回転</button><button type="button" class="btn" id="layReset">初期配置に戻す</button><button type="button" class="btn primary" id="layDoneBtn">完了</button></div>
       <div class="armbar" id="selbar" hidden><span id="seltext"></span><button type="button" class="btn" id="selDel">この端子の線を外す</button><button type="button" class="btn" id="selCancel">選択をやめる</button></div>
       <div class="boardwrap"><svg id="board" viewBox="0 0 1000 720" role="application" aria-label="結線ボード"></svg></div>
       <p class="live" id="live" aria-live="polite"></p>
-      <p class="howto"><b>① ケーブルを配置</b>：上の「2C」「3C」を押し、ケーブルを引く2か所（電源・ジョイントボックス・器具）を順にタップ。ケーブルの外皮をタップすると取り外せます。<br><b>② 心線をつなぐ</b>：ケーブル端の心線（色の丸）をタップ → つなぐ端子をタップ。ジョイントボックス（点線の円）では接続点につなぎ、同じ接続点の心線どうしが接続されます。同じボックス内の器具の端子どうしは<b>渡り線</b>。線を外すには、線をタップするか、端子を選んで「この端子の線を外す」。<b>スイッチ本体</b>のタップで切り替え。</p>
+      <p class="howto"><b>⓪ 器具の配置（任意）</b>：「器具を動かす」をオンにすると、器具やジョイントボックスをドラッグで移動、タップで選んで「90°回転」できます。<br><b>① ケーブルを配置</b>：上の「2C」「3C」を押し、ケーブルを引く2か所（電源・ジョイントボックス・器具）を順にタップ。ケーブルの外皮をタップすると取り外せます。<br><b>② 心線をつなぐ</b>：ケーブル端の心線（色の丸）をタップ → つなぐ端子をタップ。ジョイントボックス（点線の円）では接続点につなぎ、同じ接続点の心線どうしが接続されます。同じボックス内の器具の端子どうしは<b>渡り線</b>。線を外すには、線をタップするか、端子を選んで「この端子の線を外す」。<b>スイッチ本体</b>のタップで切り替え。</p>
     </section>
 
     <section class="card" id="mission"></section>
@@ -428,27 +435,36 @@ let mode=mq.matches?'t':'w',layout={},geo={stub:{},cab:[]};
 const lv=()=>LEVELS[cur];
 const dev=id=>lv().devices.find(d=>d.id===id);
 const at=d=>layout[d.id];
-const jbs=()=>mode==='t'?1.25:1;   /* 縦画面ではジョイントボックスを広げて押しやすく */
+const jbs=()=>mode==='t'?1.4:1.35;   /* ジョイントボックスは大きめに描いて、接続点を見やすく押しやすく */
 const boxOf=d=>d.box||d.id;
 const isStub=id=>id.indexOf(':')>0;
 const locDevs=loc=>lv().devices.filter(d=>boxOf(d)===loc);
 const locMain=loc=>{const ds=locDevs(loc);return ds.find(d=>SWT[d.type])||ds[0];};
 const cabOf=id=>cabs.find(c=>c.id===id);
+/* 器具の移動・回転：layOv[mode][器具id] = [x, y, 回転(0〜3 = 90°単位)] で既定位置を上書き */
+let layOv={w:{},t:{}};
+const rotOf=d=>(layout[d.id]&&layout[d.id].r)||0;
+function rv(v,r){r=((r%4)+4)%4;let x=v[0],y=v[1];for(let i=0;i<r;i++){const t=x;x=-y;y=t;}return [x+0,y+0];}
 function computeLayout(){
-  const m={},p=lv().pos[mode];
-  for(const id in p)m[id]={x:p[id][0],y:p[id][1]};
+  const m={},p=lv().pos[mode],ov=layOv[mode]||{};
+  for(const id in p){const o=ov[id];m[id]=o?{x:o[0],y:o[1],r:o[2]||0}:{x:p[id][0],y:p[id][1],r:0};}
   layout=m;computeGeo();
+}
+function hitRect(d){
+  const h=DEV[d.type].hit,q=at(d),r=rotOf(d);
+  const c=[[h[0],h[1]],[h[2],h[1]],[h[0],h[3]],[h[2],h[3]]].map(v=>rv(v,r));
+  return [q.x+Math.min(...c.map(v=>v[0])),q.y+Math.min(...c.map(v=>v[1])),q.x+Math.max(...c.map(v=>v[0])),q.y+Math.max(...c.map(v=>v[1]))];
 }
 function locCenter(loc){const d=locMain(loc),p=at(d);return [p.x,p.y];}
 function computeGeo(){
   const G={stub:{},cab:[]};
-  const portOf=d=>{const p=at(d),q=DEV[d.type].port;return [p.x+q[0],p.y+q[1]];};
+  const portOf=d=>{const p=at(d),q=rv(DEV[d.type].port,rotOf(d));return [p.x+q[0],p.y+q[1]];};
   /* 器具側：同じ器具に入るケーブルは横（縦）に並べる。並び順は相手側の位置で決めて交差を防ぐ */
   const slot={};
   const byLoc={};
   cabs.forEach(c=>[[c.f,c.t,'a'],[c.t,c.f,'b']].forEach(([me,other,e])=>{if(locMain(me).type!=='jb')(byLoc[me]=byLoc[me]||[]).push({c,other,e});}));
   for(const loc in byLoc){
-    const d=locMain(loc),T=DEV[d.type].tan,pt=portOf(d),arr=byLoc[loc];
+    const d=locMain(loc),T=rv(DEV[d.type].tan,rotOf(d)),pt=portOf(d),arr=byLoc[loc];
     arr.forEach(o=>{const oc=locCenter(o.other);o.k=(oc[0]-pt[0])*T[0]+(oc[1]-pt[1])*T[1];});
     arr.sort((x,y)=>x.k-y.k||(x.c.id<y.c.id?-1:1));
     arr.forEach((o,i)=>{const s=(i-(arr.length-1)/2)*SLOT;slot[o.c.id+o.e]=[pt[0]+T[0]*s,pt[1]+T[1]*s];});
@@ -484,15 +500,19 @@ function locAt(p){
   const j=at(dev('J'));if(Math.hypot(p.x-j.x,p.y-j.y)<=92*jbs()+10)return 'J';
   for(const d of lv().devices){
     if(d.type==='jb')continue;
-    const h=DEV[d.type].hit,q=at(d);
-    if(p.x>=q.x+h[0]&&p.x<=q.x+h[2]&&p.y>=q.y+h[1]&&p.y<=q.y+h[3])return boxOf(d);
+    const h=hitRect(d);
+    if(p.x>=h[0]&&p.x<=h[2]&&p.y>=h[1]&&p.y<=h[3])return boxOf(d);
   }
   return null;
 }
+function locRect(loc,pad){
+  const ds=locDevs(loc);let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
+  ds.forEach(d=>{const h=hitRect(d);x1=Math.min(x1,h[0]);y1=Math.min(y1,h[1]);x2=Math.max(x2,h[2]);y2=Math.max(y2,h[3]);});
+  return [x1-pad,y1-pad,x2+pad,y2+pad];
+}
 function locShape(loc,cls){
   if(loc==='J'){const j=at(dev('J'));return '<circle cx="'+j.x+'" cy="'+j.y+'" r="'+(92*jbs()+6)+'" class="'+cls+'"/>';}
-  const ds=locDevs(loc);let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
-  ds.forEach(d=>{const h=DEV[d.type].hit,q=at(d);x1=Math.min(x1,q.x+h[0]);y1=Math.min(y1,q.y+h[1]);x2=Math.max(x2,q.x+h[2]);y2=Math.max(y2,q.y+h[3]);});
+  const [x1,y1,x2,y2]=locRect(loc,0);
   return '<rect x="'+x1+'" y="'+y1+'" width="'+(x2-x1)+'" height="'+(y2-y1)+'" rx="12" class="'+cls+'"/>';
 }
 
@@ -523,8 +543,9 @@ function stubLoc(id){const [c,,e]=id.split(':'),cb=cabOf(c);return e==='a'?cb.f:
 function termLoc(id){return boxOf(dev(id.slice(0,id.indexOf('.'))));}
 function termPos(id){
   if(isStub(id))return geo.stub[id];
-  const i=id.indexOf('.'),d=dev(id.slice(0,i)),p=at(d),t=DEV[d.type].t[id.slice(i+1)],k=d.type==='jb'?jbs():1;
-  return [p.x+t[0]*k,p.y+t[1]*k,t[2],t[3]];
+  const i=id.indexOf('.'),d=dev(id.slice(0,i)),p=at(d),t=DEV[d.type].t[id.slice(i+1)],k=d.type==='jb'?jbs():1,r=rotOf(d);
+  const o=rv([t[0]*k,t[1]*k],r),n=rv([t[2],t[3]],r);
+  return [p.x+o[0],p.y+o[1],n[0],n[1]];
 }
 function validTerm(id){const i=id.indexOf('.'),d=dev(id.slice(0,i));return !!(d&&DEV[d.type].t[id.slice(i+1)]);}
 function validStub(id){const [c,i,e]=id.split(':'),cb=cabOf(c);return !!(cb&&+i<cb.n&&(e==='a'||e==='b'));}
@@ -614,7 +635,16 @@ function wirePath(A,B,i){
 }
 
 function drawDevice(d,st,an){
-  const p=at(d),g=(inner,extra)=>'<g transform="translate('+p.x+','+p.y+')"'+(extra||'')+'>'+inner+'</g>';
+  /* 回転した器具でも文字は正立させる（各文字をその位置で逆回転） */
+  const p=at(d),deg=d.type==='jb'?0:rotOf(d)*90;
+  const upright=s=>deg?s.replace(/<text([^>]*)>/g,(m,a)=>{const x=(a.match(/\sx="([-\d.]+)"/)||[0,0])[1],y=(a.match(/\sy="([-\d.]+)"/)||[0,0])[1];return '<text'+a+' transform="rotate('+(-deg)+' '+x+' '+y+')">';}):s;
+  /* 器具名：回転していないときは器具の中の決まった位置、回転しているときは器具の外（上か下）に正立で出す */
+  let outer='';
+  const nm=(txt,ly,where)=>{
+    if(!deg)return '<text y="'+ly+'" text-anchor="middle" class="dname">'+txt+'</text>';
+    const h=hitRect(d);outer+='<text x="'+p.x+'" y="'+(where==='above'?h[1]-4:h[3]+14)+'" text-anchor="middle" class="dname">'+txt+'</text>';return '';
+  };
+  const g=(inner,extra)=>'<g transform="translate('+p.x+','+p.y+')'+(deg?' rotate('+deg+')':'')+'"'+(extra||'')+'>'+upright(inner)+'</g>'+outer;
   const s=st[d.id]||0;
   switch(d.type){
   case 'power':{
@@ -633,7 +663,7 @@ function drawDevice(d,st,an){
       '<line x1="-24" y1="27" x2="-24" y2="50" class="lead"/><line x1="24" y1="27" x2="24" y2="50" class="lead"/>'+
       '<circle r="36" class="body lampbody'+(on?' on':'')+'"/>'+
       '<path d="M-15 4 q7.5 -18 15 0 q7.5 18 15 0" class="fil'+(on?' on':'')+'"/>'+
-      '<text y="-48" text-anchor="middle" class="dname">ランプ '+d.name+'</text>'+
+      nm('ランプ '+d.name,-48,'above')+
       '<text x="-34" y="55" text-anchor="end" class="tlab">W</text>');
   }
   case 'pilot':{
@@ -642,7 +672,7 @@ function drawDevice(d,st,an){
       '<line x1="-18" y1="-9" x2="-18" y2="-44" class="lead"/><line x1="18" y1="-9" x2="18" y2="-44" class="lead"/>'+
       '<circle r="20" class="body pilotbody'+(on?' on':'')+'"/>'+
       '<text y="5" text-anchor="middle" class="tlab">PL</text>'+
-      '<text y="46" text-anchor="middle" class="dname">確認表示灯</text>');
+      nm('確認表示灯',46,'below'));
   }
   case 'outlet':{
     const on=an.powered[d.id];
@@ -650,7 +680,7 @@ function drawDevice(d,st,an){
       '<rect x="-32" y="-48" width="64" height="96" rx="10" class="body"/>'+
       '<rect x="-13" y="-22" width="7" height="24" rx="2" class="oslot"/><rect x="7" y="-19" width="7" height="18" rx="2" class="oslot"/>'+
       '<text x="-26" y="-28" class="tlab">W</text>'+
-      '<text y="-60" text-anchor="middle" class="dname">コンセント</text>'+
+      nm('コンセント',-60,'above')+
       '<text y="70" text-anchor="middle" class="ostat'+(on?' on':'')+'">'+(on?'通電中':'停電')+'</text>');
   }
   case 'jb':
@@ -678,7 +708,7 @@ function drawDevice(d,st,an){
     const lbl=devName(d)+' 現在 '+st_+'（タップで切り替え）';
     return g('<rect x="-56" y="-60" width="112" height="120" rx="10" class="body"/>'+inner+
       '<text y="47" text-anchor="middle" class="sstate">'+st_+'</text>'+
-      '<text y="84" text-anchor="middle" class="dname">'+d.name+'（'+SWT[d.type]+'）</text>',
+      nm(d.name+'（'+SWT[d.type]+'）',84,'below'),
       ' class="swg" data-sw="'+d.id+'" tabindex="0" role="button" aria-label="'+lbl+'"');
   }}
 }
@@ -686,7 +716,7 @@ function drawDevice(d,st,an){
 function termEl(id,x,y,cls,an,fill){
   let pm='';
   if(probe&&!an.short){const c=an.f(id);if(c===an.L)pm='<circle cx="'+x+'" cy="'+y+'" r="14" class="pL"/>';else if(c===an.N)pm='<circle cx="'+x+'" cy="'+y+'" r="14" class="pN"/>';}
-  const r=cls.includes('stub')?7.5:cls.includes('node')?7:9;
+  const r=cls.includes('stub')?7.5:cls.includes('node')?10:9;
   return '<g class="term '+cls+(sel===id?' sel':'')+'" data-term="'+id+'" tabindex="0" role="button" aria-label="'+termName(id)+'">'+
     pm+'<circle cx="'+x+'" cy="'+y+'" r="11" class="hit"/><circle cx="'+x+'" cy="'+y+'" r="'+(r+6)+'" class="ring"/>'+
     '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" class="screw"'+(fill?' style="fill:'+fill+'"':'')+'/>'+
@@ -700,15 +730,14 @@ function renderBoard(){
   svg.setAttribute('viewBox','0 0 '+VW+' '+VH);
   svg.classList.toggle('wide',mode==='w');
   svg.classList.toggle('arming',!!arm);
+  svg.classList.toggle('layouting',layMode);
   let h='<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern>'+
     '<radialGradient id="glow"><stop offset="0" stop-color="var(--lit)" stop-opacity=".8"/><stop offset="1" stop-color="var(--lit)" stop-opacity="0"/></radialGradient>'+
     '<radialGradient id="pglow"><stop offset="0" stop-color="var(--pilot)" stop-opacity=".7"/><stop offset="1" stop-color="var(--pilot)" stop-opacity="0"/></radialGradient></defs>'+
     '<rect width="'+VW+'" height="'+VH+'" fill="url(#grid)"/>';
   /* ボックス（複数の器具が入るもの） */
-  const groups={};
-  L.devices.forEach(d=>{if(d.box)(groups[d.box]=groups[d.box]||[]).push(at(d));});
-  for(const k in groups){const ps=groups[k],x1=Math.min(...ps.map(p=>p.x))-72,x2=Math.max(...ps.map(p=>p.x))+72,y1=Math.min(...ps.map(p=>p.y))-96,y2=Math.max(...ps.map(p=>p.y))+74;
-    h+='<rect x="'+x1+'" y="'+y1+'" width="'+(x2-x1)+'" height="'+(y2-y1)+'" rx="12" class="boxline"/>';}
+  const groups=new Set();L.devices.forEach(d=>{if(d.box)groups.add(d.box);});
+  groups.forEach(k=>{const [x1,y1,x2,y2]=locRect(k,4);h+='<rect x="'+x1+'" y="'+y1+'" width="'+(x2-x1)+'" height="'+(y2-y1)+'" rx="12" class="boxline"/>';});
   for(const d of L.devices)h+=drawDevice(d,sw,an);
   /* ケーブル */
   for(const g of geo.cab){
@@ -737,14 +766,25 @@ function renderBoard(){
     const locs=new Set(['J']);L.devices.forEach(d=>{if(d.type!=='jb')locs.add(boxOf(d));});
     locs.forEach(loc=>{h+=locShape(loc,loc===armFrom?'locsel':'locc');});
   }
+  /* 器具を動かすモードでは、動かせる器具を囲む */
+  if(layMode){
+    const locs=new Set(['J']);L.devices.forEach(d=>{if(d.type!=='jb')locs.add(boxOf(d));});
+    locs.forEach(loc=>{h+=locShape(loc,loc===layLoc?'locsel':'locc');});
+  }
   if(an.short)h+='<g class="banner" pointer-events="none"><rect x="'+(VW/2-210)+'" y="4" width="420" height="32" rx="6"/><text x="'+(VW/2)+'" y="26" text-anchor="middle">短絡しています。ブレーカーがトリップしました</text></g>';
   h+='<path id="rubber" class="rubber" d=""/>';
   svg.innerHTML=h;
   if(focusKey){const el=svg.querySelector(focusKey);if(el)el.focus({preventScroll:true});}
-  renderLive(an);renderInv();renderSel();
+  renderLive(an);renderInv();renderSel();renderLay();
+}
+function renderLay(){
+  $('#layBtn').setAttribute('aria-pressed',String(layMode));
+  const b=$('#laybar');b.hidden=!layMode;if(!layMode)return;
+  $('#laytext').textContent=layLoc?'選択中：'+(layLoc==='J'?'ジョイントボックス':locName(layLoc))+'　ドラッグで移動、「90°回転」で向きを変える':'器具をドラッグで移動。タップで選ぶと回転できます';
+  $('#layRot').disabled=!layLoc||layLoc==='J';
 }
 function renderSel(){
-  const b=$('#selbar'),on=!!sel&&!arm&&validId(sel);
+  const b=$('#selbar'),on=!!sel&&!arm&&!layMode&&validId(sel);
   b.hidden=!on;if(!on)return;
   const n=countAt(sel);
   $('#seltext').textContent='選択中：'+termName(sel)+(n?'（つないだ線 '+n+' 本）':'')+'　→ つなぐ先をタップ';
@@ -843,11 +883,11 @@ function renderAll(){renderLevels();renderMission();renderBoard();renderResult()
 /* ---------- 操作 ---------- */
 function persist(){
   saved.cur=cur;saved.color=color;
-  saved.work[lv().id]={cabs:cabs.map(c=>({...c})),links:links.map(({id,...r})=>r)};
+  saved.work[lv().id]={cabs:cabs.map(c=>({...c})),links:links.map(({id,...r})=>r),lay:layOv};
   save();
 }
 function changed(){lastResult=null;computeGeo();persist();renderBoard();renderResult();}
-function pushHist(){hist.push({cabs:cabs.map(c=>({...c})),links:links.map(l=>({...l})),usedAnswer});if(hist.length>200)hist.shift();}
+function pushHist(){hist.push({cabs:cabs.map(c=>({...c})),links:links.map(l=>({...l})),usedAnswer,lay:JSON.parse(JSON.stringify(layOv))});if(hist.length>200)hist.shift();}
 let toastT=0;
 function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},2600);}
 const buzz=()=>{try{if(navigator.vibrate)navigator.vibrate(12);}catch(e){}};
@@ -895,7 +935,44 @@ function placeAt(loc){
   cabs.push(c);arm=0;armFrom=null;changed();buzz();
   toast(cableName(c)+'を配置しました。心線をつないでください');
 }
-function setArm(n){arm=n;armFrom=null;sel=null;renderBoard();if(n)$('#armCancel').focus({preventScroll:true});}
+function setArm(n){arm=n;armFrom=null;sel=null;if(n){layMode=false;layLoc=null;}renderBoard();if(n)$('#armCancel').focus({preventScroll:true});}
+
+/* ---------- 器具の移動・回転 ---------- */
+let layMode=false,layLoc=null,moving=null,rafPending=false;
+const snap=v=>Math.round(v/10)*10;
+function clampPt(x,y){const [VW,VH]=VB[mode];return [Math.max(30,Math.min(VW-30,x)),Math.max(30,Math.min(VH-30,y))];}
+function setPos(id,x,y,r){(layOv[mode]=layOv[mode]||{})[id]=[Math.round(x),Math.round(y),r];}
+/* 器具（端子を含む）が盤面からはみ出さないようにずらす */
+function keepInside(loc){
+  const [VW,VH]=VB[mode];let x1,y1,x2,y2;
+  if(loc==='J'){const j=at(dev('J')),r=92*jbs();[x1,y1,x2,y2]=[j.x-r,j.y-r,j.x+r,j.y+r];}
+  else{
+    [x1,y1,x2,y2]=locRect(loc,0);
+    /* ケーブルの入り口（心線の丸が並ぶ位置）も含める */
+    const d=locMain(loc),q=rv(DEV[d.type].port,rotOf(d)),px=at(d).x+q[0],py=at(d).y+q[1];
+    x1=Math.min(x1,px-30);y1=Math.min(y1,py-30);x2=Math.max(x2,px+30);y2=Math.max(y2,py+30);
+  }
+  let dx=0,dy=0;
+  if(x1<4)dx=4-x1;else if(x2>VW-4)dx=VW-4-x2;
+  if(y1<4)dy=4-y1;else if(y2>VH-4)dy=VH-4-y2;
+  if(!dx&&!dy)return;
+  locDevs(loc).forEach(d=>setPos(d.id,at(d).x+dx,at(d).y+dy,rotOf(d)));
+  computeLayout();
+}
+function setLayMode(on){layMode=on;layLoc=null;moving=null;if(on){arm=0;armFrom=null;sel=null;}renderBoard();}
+function layDone(){lastResult=null;persist();renderBoard();renderResult();}
+function rotateLoc(loc){
+  if(!loc)return;
+  if(loc==='J'){toast('ジョイントボックスは丸いので、回転しても同じです');return;}
+  const ds=locDevs(loc);pushHist();
+  const cx=ds.reduce((a,d)=>a+at(d).x,0)/ds.length,cy=ds.reduce((a,d)=>a+at(d).y,0)/ds.length;
+  ds.forEach(d=>{const p=at(d),v=rv([p.x-cx,p.y-cy],1),[x,y]=clampPt(cx+v[0],cy+v[1]);setPos(d.id,x,y,(rotOf(d)+1)%4);});
+  computeLayout();keepInside(loc);layDone();buzz();
+}
+function resetLayout(){
+  if(!Object.keys(layOv[mode]||{}).length){toast('すでに初期配置です');return;}
+  pushHist();layOv[mode]={};layLoc=null;computeLayout();layDone();toast('器具を初期配置に戻しました（元に戻せます）');
+}
 function termClick(id){
   if(sel&&sel!==id){const a=sel;sel=null;connect(a,id);renderBoard();return;}
   sel=sel===id?null:id;renderBoard();
@@ -903,8 +980,11 @@ function termClick(id){
 function toggleSw(id){sw[id]=sw[id]?0:1;renderBoard();}
 
 function loadLevel(i){
-  cur=i;arm=0;armFrom=null;
+  cur=i;arm=0;armFrom=null;layMode=false;layLoc=null;moving=null;
   const w=saved.work[lv().id]||{};
+  layOv={w:{},t:{}};
+  if(w.lay)for(const m of ['w','t'])for(const id in (w.lay[m]||{})){const o=w.lay[m][id];
+    if(lv().pos[m][id]&&Array.isArray(o)&&o.every(v=>typeof v==='number'&&isFinite(v)))layOv[m][id]=[o[0],o[1],((o[2]|0)%4+4)%4];}
   cabs=(w.cabs||[]).filter(c=>c&&CORE[c.n]&&validLoc(c.f)&&validLoc(c.t)&&c.f!==c.t).map(c=>({id:c.id,f:c.f,t:c.t,n:c.n}));
   /* 支給本数を超える分は捨てる */
   const cnt={};cabs=cabs.filter(c=>{cnt[c.n]=(cnt[c.n]||0)+1;return cnt[c.n]<=(lv().stock[c.n]||0);});
@@ -944,27 +1024,51 @@ function nearestTerm(e,R){
 const tapR=e=>{const onOther=e.target.closest&&e.target.closest('[data-link],[data-cab],[data-sw]');return onOther?10:(mode==='t'?26:20);};
 svg.addEventListener('pointerdown',e=>{
   if(arm)return;
+  if(layMode){
+    const p=svgPt(e),loc=locAt(p);
+    if(!loc){layLoc=null;renderBoard();return;}
+    e.preventDefault();
+    try{svg.setPointerCapture(e.pointerId);}catch(_){}
+    moving={loc,p0:p,orig:locDevs(loc).map(d=>({id:d.id,x:at(d).x,y:at(d).y,r:rotOf(d)})),moved:false};
+    return;
+  }
   const id=nearestTerm(e,tapR(e));
   if(!id)return;
   if(e.pointerType==='mouse')e.preventDefault();
   drag={from:id,x:e.clientX,y:e.clientY,moved:false};
 });
 window.addEventListener('pointermove',e=>{
+  if(moving){
+    const p=svgPt(e);let dx=p.x-moving.p0.x,dy=p.y-moving.p0.y;
+    if(!moving.moved){if(Math.hypot(dx,dy)<6)return;moving.moved=true;pushHist();layLoc=moving.loc;}
+    dx=snap(dx);dy=snap(dy);
+    moving.orig.forEach(o=>{const [x,y]=clampPt(o.x+dx,o.y+dy);setPos(o.id,x,y,o.r);});
+    computeLayout();keepInside(moving.loc);
+    if(!rafPending){rafPending=true;requestAnimationFrame(()=>{rafPending=false;renderBoard();});}
+    return;
+  }
   if(arm){if(armFrom&&e.pointerType==='mouse')rubber(locCenter(armFrom),e);return;}
   if(drag){
     if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>6)drag.moved=true;
     if(drag.moved)rubber(termPos(drag.from),e);
   }else if(sel&&e.pointerType==='mouse'){rubber(termPos(sel),e);}
 });
+function endMove(){
+  const m=moving;moving=null;lastTermTap=performance.now();
+  if(!m.moved){layLoc=layLoc===m.loc?null:m.loc;renderBoard();}
+  else layDone();
+}
 window.addEventListener('pointerup',e=>{
+  if(moving){endMove();return;}
   if(!drag)return;
   const d=drag;drag=null;
   lastTermTap=performance.now();
   if(d.moved){const to=nearestTerm(e,mode==='t'?26:20);sel=null;if(to&&to!==d.from)connect(d.from,to);renderBoard();}
   else termClick(d.from);
 });
-window.addEventListener('pointercancel',()=>{drag=null;rubber(null);});
+window.addEventListener('pointercancel',()=>{if(moving){endMove();return;}drag=null;rubber(null);});
 svg.addEventListener('click',e=>{
+  if(layMode)return;
   if(arm){placeAt(locAt(svgPt(e)));return;}
   /* 端子を選んだ同じタップで、下の線やスイッチまで反応しないようにする */
   if(performance.now()-lastTermTap<450)return;
@@ -975,7 +1079,9 @@ svg.addEventListener('click',e=>{
   if(sel){sel=null;renderBoard();}
 });
 document.addEventListener('keydown',e=>{
+  if(layMode&&(e.key==='r'||e.key==='R')&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){rotateLoc(layLoc);return;}
   if(e.key!=='Escape')return;
+  if(layMode){setLayMode(false);return;}
   if(arm){setArm(0);return;}
   if(sel){sel=null;renderBoard();}
 });
@@ -996,6 +1102,10 @@ $('#inv').addEventListener('click',e=>{
   setArm(n);
 });
 $('#armCancel').addEventListener('click',()=>setArm(0));
+$('#layBtn').addEventListener('click',()=>setLayMode(!layMode));
+$('#layRot').addEventListener('click',()=>rotateLoc(layLoc));
+$('#layReset').addEventListener('click',resetLayout);
+$('#layDoneBtn').addEventListener('click',()=>setLayMode(false));
 $('#selCancel').addEventListener('click',()=>{sel=null;renderBoard();});
 $('#selDel').addEventListener('click',()=>{
   if(!sel)return;
@@ -1006,7 +1116,7 @@ $('#selDel').addEventListener('click',()=>{
 document.querySelectorAll('.seg [data-color]').forEach(b=>b.addEventListener('click',()=>{color=b.dataset.color;persist();renderColor();}));
 $('#undo').addEventListener('click',()=>{
   if(!hist.length){toast('これ以上は戻せません');return;}
-  const h=hist.pop();cabs=h.cabs;links=h.links;usedAnswer=h.usedAnswer;arm=0;armFrom=null;sel=null;renderMission();changed();
+  const h=hist.pop();cabs=h.cabs;links=h.links;usedAnswer=h.usedAnswer;layOv=h.lay;arm=0;armFrom=null;sel=null;computeLayout();renderMission();changed();
 });
 $('#clear').addEventListener('click',()=>{
   if(!links.length&&!cabs.length)return;
