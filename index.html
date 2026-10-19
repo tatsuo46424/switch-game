@@ -196,6 +196,14 @@ h1{font-family:var(--f-disp); font-weight:400; font-size:clamp(26px,3.6vw,36px);
 /* 器具を動かすモード：盤面のドラッグはページのスクロールではなく器具の移動にする */
 #board.layouting{touch-action:none; cursor:grab}
 #board.layouting .term,#board.layouting .link,#board.layouting .cab,#board.layouting .swg{pointer-events:none}
+#board .cabsel{stroke:var(--accent); stroke-width:22; stroke-linecap:round; opacity:.35; pointer-events:none}
+#board .ehandle{fill:var(--accent); fill-opacity:.08; stroke:var(--accent); stroke-width:2.5; stroke-dasharray:5 4; pointer-events:none}
+#board .ehandle.loose{stroke:var(--ng); fill:var(--ng); fill-opacity:.1}
+#board .rline{stroke:var(--accent); stroke-width:2; stroke-dasharray:4 4; pointer-events:none}
+#board .rhandle{fill:var(--accent); stroke:var(--accent-ink); stroke-width:1.5; pointer-events:none}
+#board .rhtext{font-size:18px; font-weight:700; fill:var(--accent-ink); pointer-events:none}
+#board .ghost{fill:none; stroke:var(--sheath-edge); stroke-width:13; stroke-linecap:round; opacity:.7; pointer-events:none}
+#inv button{touch-action:none}
 .btn[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
 .btn:disabled{opacity:.5; cursor:not-allowed}
 
@@ -281,11 +289,11 @@ td.short{background:var(--ng-soft); color:var(--ng); font-weight:700}
         <button type="button" class="btn primary" id="judge">判定する</button>
       </div>
       <div class="armbar" id="armbar" hidden><span id="armtext"></span><button type="button" class="btn" id="armCancel">やめる</button></div>
-      <div class="armbar" id="laybar" hidden><span id="laytext"></span><button type="button" class="btn" id="layRot">⟳ 90°回転</button><button type="button" class="btn" id="layReset">初期配置に戻す</button><button type="button" class="btn primary" id="layDoneBtn">完了</button></div>
+      <div class="armbar" id="laybar" hidden><span id="laytext"></span><button type="button" class="btn" id="layRot">⟳ 90°回転</button><button type="button" class="btn" id="layDel" hidden>このケーブルを外す</button><button type="button" class="btn" id="layReset">初期配置に戻す</button><button type="button" class="btn primary" id="layDoneBtn">完了</button></div>
       <div class="armbar" id="selbar" hidden><span id="seltext"></span><button type="button" class="btn" id="selDel">この端子の線を外す</button><button type="button" class="btn" id="selCancel">選択をやめる</button></div>
       <div class="boardwrap"><svg id="board" viewBox="0 0 1000 720" role="application" aria-label="結線ボード"></svg></div>
       <p class="live" id="live" aria-live="polite"></p>
-      <p class="howto"><b>⓪ 器具の配置（任意）</b>：「器具を動かす」をオンにすると、器具やジョイントボックスをドラッグで移動、タップで選んで「90°回転」できます。<br><b>① ケーブルを配置</b>：上の「2C」「3C」を押し、ケーブルを引く2か所（電源・ジョイントボックス・器具）を順にタップ。ケーブルの外皮をタップすると取り外せます。<br><b>② 心線をつなぐ</b>：ケーブル端の心線（色の丸）をタップ → つなぐ端子をタップ。ジョイントボックス（点線の円）では接続点につなぎ、同じ接続点の心線どうしが接続されます。同じボックス内の器具の端子どうしは<b>渡り線</b>。線を外すには、線をタップするか、端子を選んで「この端子の線を外す」。<b>スイッチ本体</b>のタップで切り替え。</p>
+      <p class="howto"><b>⓪ 器具の配置（任意）</b>：「器具を動かす」をオンにすると、器具やジョイントボックスをドラッグで移動、タップで選んで「90°回転」できます。<br><b>① ケーブルを配置</b>：「2C」「3C」を盤面へドラッグ＆ドロップして、両端の○をつなぐ先（電源・ジョイントボックス・器具）までドラッグ。ボタンを押して2か所をタップしても置けます。「器具を動かす」中は、ケーブルの外皮をドラッグで移動、選んで出る⟳を回して回転できます。<br><b>② 心線をつなぐ</b>：ケーブル端の心線（色の丸）をタップ → つなぐ端子をタップ。ジョイントボックス（点線の円）では接続点につなぎ、同じ接続点の心線どうしが接続されます。同じボックス内の器具の端子どうしは<b>渡り線</b>。線を外すには、線をタップするか、端子を選んで「この端子の線を外す」。<b>スイッチ本体</b>のタップで切り替え。</p>
     </section>
 
     <section class="card" id="mission"></section>
@@ -456,16 +464,33 @@ function hitRect(d){
   return [q.x+Math.min(...c.map(v=>v[0])),q.y+Math.min(...c.map(v=>v[1])),q.x+Math.max(...c.map(v=>v[0])),q.y+Math.max(...c.map(v=>v[1]))];
 }
 function locCenter(loc){const d=locMain(loc),p=at(d);return [p.x,p.y];}
+/* ケーブル端：ma/mb が null なら自動配置。数値なら手で置いた位置
+   （つながっている端は器具の向きに合わせた器具基準の座標、どこにもつながっていない端は盤面の座標） */
+const rotLoc=loc=>loc==='J'?0:rotOf(locMain(loc));
+function endWorld(c,e){
+  const m=e==='a'?c.ma:c.mb,loc=e==='a'?c.f:c.t;
+  if(!m)return null;
+  if(!loc)return [m[0],m[1]];
+  const ctr=locCenter(loc),v=rv(m,rotLoc(loc));return [ctr[0]+v[0],ctr[1]+v[1]];
+}
+function setEnd(c,e,pt){
+  const other=e==='a'?c.t:c.f;let loc=locAt({x:pt[0],y:pt[1]});
+  if(loc&&loc===other)loc=null;   /* 両端を同じ場所にはつながない */
+  const fk=e==='a'?'f':'t',mk=e==='a'?'ma':'mb';
+  if(loc){const ctr=locCenter(loc),v=rv([pt[0]-ctr[0],pt[1]-ctr[1]],-rotLoc(loc));c[fk]=loc;c[mk]=[Math.round(v[0]),Math.round(v[1])];}
+  else{c[fk]=null;c[mk]=[Math.round(pt[0]),Math.round(pt[1])];}
+}
 function computeGeo(){
-  const G={stub:{},cab:[]};
+  const G={stub:{},cab:[],end:{}};
   const portOf=d=>{const p=at(d),q=rv(DEV[d.type].port,rotOf(d));return [p.x+q[0],p.y+q[1]];};
-  /* 器具側：同じ器具に入るケーブルは横（縦）に並べる。並び順は相手側の位置で決めて交差を防ぐ */
+  const otherPt=(c,e)=>{const o=e==='a'?'b':'a',w=endWorld(c,o);return w||locCenter(o==='a'?c.f:c.t);};
+  /* 器具側（自動配置の端だけ）：同じ器具に入るケーブルは横（縦）に並べる。並び順は相手側の位置で決めて交差を防ぐ */
   const slot={};
   const byLoc={};
-  cabs.forEach(c=>[[c.f,c.t,'a'],[c.t,c.f,'b']].forEach(([me,other,e])=>{if(locMain(me).type!=='jb')(byLoc[me]=byLoc[me]||[]).push({c,other,e});}));
+  cabs.forEach(c=>[[c.f,'a',c.ma],[c.t,'b',c.mb]].forEach(([me,e,m])=>{if(!m&&me&&locMain(me).type!=='jb')(byLoc[me]=byLoc[me]||[]).push({c,e});}));
   for(const loc in byLoc){
     const d=locMain(loc),T=rv(DEV[d.type].tan,rotOf(d)),pt=portOf(d),arr=byLoc[loc];
-    arr.forEach(o=>{const oc=locCenter(o.other);o.k=(oc[0]-pt[0])*T[0]+(oc[1]-pt[1])*T[1];});
+    arr.forEach(o=>{const oc=otherPt(o.c,o.e);o.k=(oc[0]-pt[0])*T[0]+(oc[1]-pt[1])*T[1];});
     arr.sort((x,y)=>x.k-y.k||(x.c.id<y.c.id?-1:1));
     arr.forEach((o,i)=>{const s=(i-(arr.length-1)/2)*SLOT;slot[o.c.id+o.e]=[pt[0]+T[0]*s,pt[1]+T[1]*s];});
   }
@@ -474,13 +499,14 @@ function computeGeo(){
   cabs.forEach(c=>{cnt[key(c)]=(cnt[key(c)]||0)+1;});
   cabs.forEach(c=>{
     const k=key(c),j=idx[k]=(idx[k]===undefined?0:idx[k]+1),sign=c.f<c.t?1:-1,off=(j-(cnt[k]-1)/2)*50*sign;
-    const df=locMain(c.f),dt=locMain(c.t),cf=at(df),ct=at(dt);
-    let A=slot[c.id+'a']||null,B=slot[c.id+'b']||null;
-    const rA=A||[cf.x,cf.y],rB=B||[ct.x,ct.y];
+    let A=c.ma?endWorld(c,'a'):(slot[c.id+'a']||null),B=c.mb?endWorld(c,'b'):(slot[c.id+'b']||null);
+    const rA=A||locCenter(c.f),rB=B||locCenter(c.t);
     let ux=rB[0]-rA[0],uy=rB[1]-rA[1],m=Math.hypot(ux,uy)||1;ux/=m;uy/=m;
     const RG=RING*jbs();
-    if(!A)A=[cf.x+ux*RG-uy*off,cf.y+uy*RG+ux*off];
-    if(!B)B=[ct.x-ux*RG-uy*off,ct.y-uy*RG+ux*off];
+    /* 自動配置のジョイントボックス側は、相手の方向の円周上に置く */
+    if(!A)A=[rA[0]+ux*RG-uy*off,rA[1]+uy*RG+ux*off];
+    if(!B)B=[rB[0]-ux*RG-uy*off,rB[1]-uy*RG+ux*off];
+    G.end[c.id]=[A,B];
     ux=B[0]-A[0];uy=B[1]-A[1];m=Math.hypot(ux,uy)||1;ux/=m;uy/=m;
     const px=-uy,py=ux;
     const sA=[A[0]+ux*16,A[1]+uy*16],sB=[B[0]-ux*16,B[1]-uy*16];
@@ -502,6 +528,12 @@ function locAt(p){
     if(d.type==='jb')continue;
     const h=hitRect(d);
     if(p.x>=h[0]&&p.x<=h[2]&&p.y>=h[1]&&p.y<=h[3])return boxOf(d);
+  }
+  /* ケーブルの入り口（器具の外側）の近くも、その器具とみなす */
+  for(const d of lv().devices){
+    if(d.type==='jb')continue;
+    const q=rv(DEV[d.type].port,rotOf(d)),c=at(d);
+    if(Math.hypot(p.x-c.x-q[0],p.y-c.y-q[1])<44)return boxOf(d);
   }
   return null;
 }
@@ -527,9 +559,9 @@ function devName(d){
   return 'スイッチ '+tagOf(d)+'（'+SWT[d.type]+'）';
 }
 function locName(loc){const ds=locDevs(loc);return ds.length>1?devName(locMain(loc)).replace(/（.*）/,'')+'のボックス':devName(ds[0]);}
-function cableName(c){const s=loc=>loc==='J'?'JB':locName(loc).replace(/（.*）/,'');return s(c.f)+'–'+s(c.t)+'間 VVF1.6-'+c.n+'C';}
+function cableName(c){const s=loc=>!loc?'（未接続）':loc==='J'?'JB':locName(loc).replace(/（.*）/,'');return s(c.f)+'–'+s(c.t)+'間 VVF1.6-'+c.n+'C';}
 function termName(id){
-  if(isStub(id)){const [c,i,e]=id.split(':'),cb=cabOf(c);return cableName(cb)+'の'+COLORS[CORE[cb.n][+i]].name+'線（'+locName(e==='a'?cb.f:cb.t)+'側）';}
+  if(isStub(id)){const [c,i,e]=id.split(':'),cb=cabOf(c);const lc=e==='a'?cb.f:cb.t;return cableName(cb)+'の'+COLORS[CORE[cb.n][+i]].name+'線（'+(lc?locName(lc)+'側':'未接続の端')+'）';}
   const i=id.indexOf('.'),d=dev(id.slice(0,i)),t=id.slice(i+1);
   if(d.type==='power')return t==='L'?'電源L':'電源N';
   if(d.type==='jb')return '接続点'+t.slice(1);
@@ -596,6 +628,8 @@ function judge(){
   const funcOK=!anyShort&&mism===0;
   const wk=[],col=[];
   /* 結線・極性 */
+  const loose=cabs.filter(c=>!c.f||!c.t);
+  if(loose.length)wk.push('端が器具やジョイントボックスにつながっていないケーブルが '+loose.length+' 本あります。');
   const free=freeStubs();
   if(free.length)wk.push('未結線の心線が '+free.length+' 本あります（例：'+termName(free[0])+'）。使わないケーブルは外してください。');
   for(const t in DEV.jb.t){const n=countAt('J.'+t);if(n===1)wk.push('接続点'+t.slice(1)+' に電線が1本しかありません。');}
@@ -770,6 +804,14 @@ function renderBoard(){
   if(layMode){
     const locs=new Set(['J']);L.devices.forEach(d=>{if(d.type!=='jb')locs.add(boxOf(d));});
     locs.forEach(loc=>{h+=locShape(loc,loc===layLoc?'locsel':'locc');});
+    /* ケーブル：両端のつまみ、選択中のケーブルは強調＋回転つまみ */
+    for(const g of geo.cab){
+      const [A,B]=geo.end[g.c.id],on=g.c.id===layCab;
+      if(on)h+='<line x1="'+g.sA[0]+'" y1="'+g.sA[1]+'" x2="'+g.sB[0]+'" y2="'+g.sB[1]+'" class="cabsel"/>';
+      [[A,g.c.f],[B,g.c.t]].forEach(([P,loc])=>{h+='<circle cx="'+P[0]+'" cy="'+P[1]+'" r="'+(g.c.n===3?30:22)+'" class="ehandle'+(loc?'':' loose')+'"/>';});
+      if(on){const R=rotHandle(g.c.id),mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2;
+        h+='<line x1="'+mx+'" y1="'+my+'" x2="'+R[0]+'" y2="'+R[1]+'" class="rline"/><circle cx="'+R[0]+'" cy="'+R[1]+'" r="16" class="rhandle"/><text x="'+R[0]+'" y="'+(R[1]+6)+'" text-anchor="middle" class="rhtext">⟳</text>';}
+    }
   }
   if(an.short)h+='<g class="banner" pointer-events="none"><rect x="'+(VW/2-210)+'" y="4" width="420" height="32" rx="6"/><text x="'+(VW/2)+'" y="26" text-anchor="middle">短絡しています。ブレーカーがトリップしました</text></g>';
   h+='<path id="rubber" class="rubber" d=""/>';
@@ -780,8 +822,12 @@ function renderBoard(){
 function renderLay(){
   $('#layBtn').setAttribute('aria-pressed',String(layMode));
   const b=$('#laybar');b.hidden=!layMode;if(!layMode)return;
-  $('#laytext').textContent=layLoc?'選択中：'+(layLoc==='J'?'ジョイントボックス':locName(layLoc))+'　ドラッグで移動、「90°回転」で向きを変える':'器具をドラッグで移動。タップで選ぶと回転できます';
-  $('#layRot').disabled=!layLoc||layLoc==='J';
+  const c=layCab&&cabOf(layCab);
+  $('#laytext').textContent=c?'選択中：'+cableName(c)+'（⟳を回して回転）':
+    layLoc?'選択中：'+(layLoc==='J'?'ジョイントボックス':locName(layLoc)):
+    'ドラッグで移動・タップで選んで回転';
+  $('#layRot').disabled=!c&&(!layLoc||layLoc==='J');
+  $('#layDel').hidden=!c;
 }
 function renderSel(){
   const b=$('#selbar'),on=!!sel&&!arm&&!layMode&&validId(sel);
@@ -898,6 +944,7 @@ function connect(a,b){
   if(sa&&sb){toast('心線どうしは、ジョイントボックスの同じ接続点につないで接続します');return;}
   if(sa||sb){
     const s=sa?a:b,t=sa?b:a;
+    if(!stubLoc(s)){toast('このケーブルの端はどこにもつながっていません。「器具を動かす」で端を器具やジョイントボックスまでドラッグしてください');return;}
     if(stubLoc(s)!==termLoc(t)){toast('この心線は「'+locName(stubLoc(s))+'」の端子にしかつなげません');return;}
     const isNode=t.startsWith('J.'),cap=isNode?NODE_MAX:TERM_MAX;
     const old=links.find(l=>l.k==='att'&&l.s===s);
@@ -938,8 +985,8 @@ function placeAt(loc){
 function setArm(n){arm=n;armFrom=null;sel=null;if(n){layMode=false;layLoc=null;}renderBoard();if(n)$('#armCancel').focus({preventScroll:true});}
 
 /* ---------- 器具の移動・回転 ---------- */
-let layMode=false,layLoc=null,moving=null,rafPending=false;
-const snap=v=>Math.round(v/10)*10;
+let layMode=false,layLoc=null,layCab=null,moving=null,rafPending=false,invDrag=null;
+const redraw=()=>{if(!rafPending){rafPending=true;requestAnimationFrame(()=>{rafPending=false;renderBoard();});}};
 function clampPt(x,y){const [VW,VH]=VB[mode];return [Math.max(30,Math.min(VW-30,x)),Math.max(30,Math.min(VH-30,y))];}
 function setPos(id,x,y,r){(layOv[mode]=layOv[mode]||{})[id]=[Math.round(x),Math.round(y),r];}
 /* 器具（端子を含む）が盤面からはみ出さないようにずらす */
@@ -959,8 +1006,60 @@ function keepInside(loc){
   locDevs(loc).forEach(d=>setPos(d.id,at(d).x+dx,at(d).y+dy,rotOf(d)));
   computeLayout();
 }
-function setLayMode(on){layMode=on;layLoc=null;moving=null;if(on){arm=0;armFrom=null;sel=null;}renderBoard();}
+function setLayMode(on){layMode=on;layLoc=null;layCab=null;moving=null;if(on){arm=0;armFrom=null;sel=null;}renderBoard();}
 function layDone(){lastResult=null;persist();renderBoard();renderResult();}
+
+/* ---------- ケーブルの移動・回転 ---------- */
+function rotHandle(id){
+  const e=geo.end[id];if(!e)return null;
+  const [A,B]=e,mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2,ux=B[0]-A[0],uy=B[1]-A[1],m=Math.hypot(ux,uy)||1;
+  return [mx-uy/m*48,my+ux/m*48];
+}
+function segDist(p,a,b){
+  const vx=b[0]-a[0],vy=b[1]-a[1],L2=vx*vx+vy*vy||1;
+  const t=Math.max(0,Math.min(1,((p.x-a[0])*vx+(p.y-a[1])*vy)/L2));
+  return Math.hypot(p.x-(a[0]+vx*t),p.y-(a[1]+vy*t));
+}
+/* 器具を動かすモードで、押した場所が何かを決める（回転つまみ → ケーブル端 → ケーブル外皮 → 器具の順） */
+function layPick(p){
+  const R=mode==='t'?26:20;
+  if(layCab){const h=rotHandle(layCab);if(h&&Math.hypot(p.x-h[0],p.y-h[1])<R+2)return {kind:'rot',id:layCab};}
+  let best=null,bd=R+8;
+  for(const id in geo.end){const [A,B]=geo.end[id];
+    const da=Math.hypot(p.x-A[0],p.y-A[1]),db=Math.hypot(p.x-B[0],p.y-B[1]);
+    if(da<bd){bd=da;best={kind:'end',id,e:'a'};}
+    if(db<bd){bd=db;best={kind:'end',id,e:'b'};}}
+  if(best)return best;
+  for(const g of geo.cab)if(segDist(p,g.sA,g.sB)<(mode==='t'?16:12))return {kind:'body',id:g.c.id};
+  const loc=locAt(p);return loc?{kind:'dev',loc}:null;
+}
+/* ケーブル端を動かした結果、つながる場所が変わった端の結線を外す */
+function commitCab(c,f0,t0){
+  const lostA=c.f!==f0,lostB=c.t!==t0;
+  if(!lostA&&!lostB)return;
+  const n0=links.length;
+  links=links.filter(l=>!(l.k==='att'&&l.s.split(':')[0]===c.id&&((lostA&&l.s.endsWith(':a'))||(lostB&&l.s.endsWith(':b')))));
+  if(links.length<n0)toast('ケーブルの端のつなぐ先が変わったので、その端の結線を外しました（元に戻せます）');
+}
+function moveCabTo(c,A,B){const pa=clampPt(A[0],A[1]),pb=clampPt(B[0],B[1]);setEnd(c,'a',pa);setEnd(c,'b',pb);computeGeo();}
+function rotPts(A,B,ang,ctr){
+  const cs=Math.cos(ang),sn=Math.sin(ang),r=P=>[ctr[0]+(P[0]-ctr[0])*cs-(P[1]-ctr[1])*sn,ctr[1]+(P[0]-ctr[0])*sn+(P[1]-ctr[1])*cs];
+  return [r(A),r(B)];
+}
+function rotateCab(id,deg){
+  const c=cabOf(id);if(!c)return;
+  const [A,B]=geo.end[id],ctr=[(A[0]+B[0])/2,(A[1]+B[1])/2],f0=c.f,t0=c.t;
+  pushHist();const [a,b]=rotPts(A,B,deg*Math.PI/180,ctr);moveCabTo(c,a,b);commitCab(c,f0,t0);layDone();buzz();
+}
+function newCabAt(n,p){
+  if(left(n)<=0){toast('VVF1.6-'+n+'C はもう残っていません');return;}
+  pushHist();
+  const c={id:'c'+(cabSeq++),f:null,t:null,n,ma:null,mb:null};
+  cabs.push(c);moveCabTo(c,[p.x-100,p.y],[p.x+100,p.y]);
+  layMode=true;layLoc=null;layCab=c.id;arm=0;armFrom=null;sel=null;
+  changed();buzz();
+  toast('ケーブルを置きました。両端の○を、つなぎたい器具やジョイントボックスまでドラッグしてください');
+}
 function rotateLoc(loc){
   if(!loc)return;
   if(loc==='J'){toast('ジョイントボックスは丸いので、回転しても同じです');return;}
@@ -980,12 +1079,14 @@ function termClick(id){
 function toggleSw(id){sw[id]=sw[id]?0:1;renderBoard();}
 
 function loadLevel(i){
-  cur=i;arm=0;armFrom=null;layMode=false;layLoc=null;moving=null;
+  cur=i;arm=0;armFrom=null;layMode=false;layLoc=null;layCab=null;moving=null;
   const w=saved.work[lv().id]||{};
   layOv={w:{},t:{}};
   if(w.lay)for(const m of ['w','t'])for(const id in (w.lay[m]||{})){const o=w.lay[m][id];
     if(lv().pos[m][id]&&Array.isArray(o)&&o.every(v=>typeof v==='number'&&isFinite(v)))layOv[m][id]=[o[0],o[1],((o[2]|0)%4+4)%4];}
-  cabs=(w.cabs||[]).filter(c=>c&&CORE[c.n]&&validLoc(c.f)&&validLoc(c.t)&&c.f!==c.t).map(c=>({id:c.id,f:c.f,t:c.t,n:c.n}));
+  const okEnd=(loc,m)=>(loc===null?Array.isArray(m):validLoc(loc))&&(m==null||(Array.isArray(m)&&m.length===2&&m.every(v=>typeof v==='number'&&isFinite(v))));
+  cabs=(w.cabs||[]).filter(c=>c&&CORE[c.n]&&okEnd(c.f,c.ma)&&okEnd(c.t,c.mb)&&!(c.f&&c.f===c.t))
+    .map(c=>({id:c.id,f:c.f,t:c.t,n:c.n,ma:c.ma||null,mb:c.mb||null}));
   /* 支給本数を超える分は捨てる */
   const cnt={};cabs=cabs.filter(c=>{cnt[c.n]=(cnt[c.n]||0)+1;return cnt[c.n]<=(lv().stock[c.n]||0);});
   cabSeq=1+Math.max(0,...cabs.map(c=>+c.id.slice(1)||0));
@@ -1025,11 +1126,18 @@ const tapR=e=>{const onOther=e.target.closest&&e.target.closest('[data-link],[da
 svg.addEventListener('pointerdown',e=>{
   if(arm)return;
   if(layMode){
-    const p=svgPt(e),loc=locAt(p);
-    if(!loc){layLoc=null;renderBoard();return;}
+    const p=svgPt(e),pick=layPick(p);
+    if(!pick){layLoc=null;layCab=null;renderBoard();return;}
     e.preventDefault();
     try{svg.setPointerCapture(e.pointerId);}catch(_){}
-    moving={loc,p0:p,orig:locDevs(loc).map(d=>({id:d.id,x:at(d).x,y:at(d).y,r:rotOf(d)})),moved:false};
+    if(pick.kind==='dev'){
+      moving={kind:'dev',loc:pick.loc,p0:p,orig:locDevs(pick.loc).map(d=>({id:d.id,x:at(d).x,y:at(d).y,r:rotOf(d)})),moved:false};
+    }else{
+      const c=cabOf(pick.id),[A,B]=geo.end[c.id];
+      moving={kind:pick.kind,id:c.id,e:pick.e,p0:p,A:[...A],B:[...B],f0:c.f,t0:c.t,moved:false,
+        ctr:[(A[0]+B[0])/2,(A[1]+B[1])/2]};
+      moving.ang0=Math.atan2(p.y-moving.ctr[1],p.x-moving.ctr[0]);
+    }
     return;
   }
   const id=nearestTerm(e,tapR(e));
@@ -1038,13 +1146,34 @@ svg.addEventListener('pointerdown',e=>{
   drag={from:id,x:e.clientX,y:e.clientY,moved:false};
 });
 window.addEventListener('pointermove',e=>{
+  if(invDrag){
+    if(!invDrag.moved&&Math.hypot(e.clientX-invDrag.x,e.clientY-invDrag.y)>8)invDrag.moved=true;
+    if(invDrag.moved){
+      const r=svg.querySelector('#rubber'),b=svg.getBoundingClientRect(),inside=e.clientX>=b.left&&e.clientX<=b.right&&e.clientY>=b.top&&e.clientY<=b.bottom;
+      if(r){r.setAttribute('class',inside?'ghost':'rubber');if(inside){const p=svgPt(e);r.setAttribute('d','M'+(p.x-100)+','+p.y+' L'+(p.x+100)+','+p.y);}else r.setAttribute('d','');}
+    }
+    return;
+  }
   if(moving){
-    const p=svgPt(e);let dx=p.x-moving.p0.x,dy=p.y-moving.p0.y;
-    if(!moving.moved){if(Math.hypot(dx,dy)<6)return;moving.moved=true;pushHist();layLoc=moving.loc;}
-    dx=snap(dx);dy=snap(dy);
-    moving.orig.forEach(o=>{const [x,y]=clampPt(o.x+dx,o.y+dy);setPos(o.id,x,y,o.r);});
-    computeLayout();keepInside(moving.loc);
-    if(!rafPending){rafPending=true;requestAnimationFrame(()=>{rafPending=false;renderBoard();});}
+    const p=svgPt(e),dx=p.x-moving.p0.x,dy=p.y-moving.p0.y;
+    if(!moving.moved){if(Math.hypot(dx,dy)<5)return;moving.moved=true;pushHist();
+      if(moving.kind==='dev'){layLoc=moving.loc;layCab=null;}else{layCab=moving.id;layLoc=null;}}
+    if(moving.kind==='dev'){
+      moving.orig.forEach(o=>{const [x,y]=clampPt(o.x+dx,o.y+dy);setPos(o.id,x,y,o.r);});
+      computeLayout();keepInside(moving.loc);
+    }else{
+      const c=cabOf(moving.id),A=moving.A,B=moving.B;
+      if(moving.kind==='end'){if(moving.e==='a')moveCabTo(c,[p.x,p.y],B);else moveCabTo(c,A,[p.x,p.y]);}
+      else if(moving.kind==='body')moveCabTo(c,[A[0]+dx,A[1]+dy],[B[0]+dx,B[1]+dy]);
+      else{
+        /* なめらかに回す。45°の倍数の近くでは吸い付く */
+        let ang=Math.atan2(p.y-moving.ctr[1],p.x-moving.ctr[0])-moving.ang0;
+        const base=Math.atan2(B[1]-A[1],B[0]-A[0]),tot=base+ang,step=Math.PI/4,near=Math.round(tot/step)*step;
+        if(Math.abs(tot-near)<0.07)ang=near-base;
+        const [a,b]=rotPts(A,B,ang,moving.ctr);moveCabTo(c,a,b);
+      }
+    }
+    redraw();
     return;
   }
   if(arm){if(armFrom&&e.pointerType==='mouse')rubber(locCenter(armFrom),e);return;}
@@ -1055,10 +1184,25 @@ window.addEventListener('pointermove',e=>{
 });
 function endMove(){
   const m=moving;moving=null;lastTermTap=performance.now();
-  if(!m.moved){layLoc=layLoc===m.loc?null:m.loc;renderBoard();}
-  else layDone();
+  if(m.kind==='dev'){
+    if(!m.moved){layCab=null;layLoc=layLoc===m.loc?null:m.loc;renderBoard();}
+    else layDone();
+    return;
+  }
+  if(!m.moved){layLoc=null;layCab=(layCab===m.id&&m.kind==='body')?null:m.id;renderBoard();return;}
+  commitCab(cabOf(m.id),m.f0,m.t0);layDone();
 }
 window.addEventListener('pointerup',e=>{
+  if(invDrag){
+    const d=invDrag;invDrag=null;
+    const r=svg.querySelector('#rubber');if(r){r.setAttribute('class','rubber');r.setAttribute('d','');}
+    if(d.moved){
+      d.done=true;const b=svg.getBoundingClientRect();
+      if(e.clientX>=b.left&&e.clientX<=b.right&&e.clientY>=b.top&&e.clientY<=b.bottom){const p=svgPt(e);const [x,y]=clampPt(p.x,p.y);newCabAt(d.n,{x,y});}
+      invSuppress=performance.now();
+    }
+    return;
+  }
   if(moving){endMove();return;}
   if(!drag)return;
   const d=drag;drag=null;
@@ -1066,7 +1210,10 @@ window.addEventListener('pointerup',e=>{
   if(d.moved){const to=nearestTerm(e,mode==='t'?26:20);sel=null;if(to&&to!==d.from)connect(d.from,to);renderBoard();}
   else termClick(d.from);
 });
-window.addEventListener('pointercancel',()=>{if(moving){endMove();return;}drag=null;rubber(null);});
+window.addEventListener('pointercancel',()=>{
+  if(invDrag){invDrag=null;rubber(null);return;}
+  if(moving){endMove();return;}drag=null;rubber(null);
+});
 svg.addEventListener('click',e=>{
   if(layMode)return;
   if(arm){placeAt(locAt(svgPt(e)));return;}
@@ -1079,7 +1226,7 @@ svg.addEventListener('click',e=>{
   if(sel){sel=null;renderBoard();}
 });
 document.addEventListener('keydown',e=>{
-  if(layMode&&(e.key==='r'||e.key==='R')&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){rotateLoc(layLoc);return;}
+  if(layMode&&(e.key==='r'||e.key==='R')&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){if(layCab)rotateCab(layCab,90);else rotateLoc(layLoc);return;}
   if(e.key!=='Escape')return;
   if(layMode){setLayMode(false);return;}
   if(arm){setArm(0);return;}
@@ -1094,7 +1241,15 @@ svg.addEventListener('keydown',e=>{
   else if(s){e.preventDefault();toggleSw(s.dataset.sw);}
 });
 
+/* 置き場のケーブルは、盤面までドラッグ＆ドロップしても置ける（押して離すだけなら従来どおり2か所タップで配置） */
+let invSuppress=0;
+$('#inv').addEventListener('pointerdown',e=>{
+  const b=e.target.closest('[data-cab-n]');if(!b||b.disabled)return;
+  invDrag={n:+b.dataset.cabN,x:e.clientX,y:e.clientY,moved:false};
+  try{b.releasePointerCapture(e.pointerId);}catch(_){}
+});
 $('#inv').addEventListener('click',e=>{
+  if(performance.now()-invSuppress<500)return;
   const b=e.target.closest('[data-cab-n]');if(!b)return;
   const n=+b.dataset.cabN;
   if(arm===n){setArm(0);return;}
@@ -1103,7 +1258,8 @@ $('#inv').addEventListener('click',e=>{
 });
 $('#armCancel').addEventListener('click',()=>setArm(0));
 $('#layBtn').addEventListener('click',()=>setLayMode(!layMode));
-$('#layRot').addEventListener('click',()=>rotateLoc(layLoc));
+$('#layRot').addEventListener('click',()=>{if(layCab)rotateCab(layCab,90);else rotateLoc(layLoc);});
+$('#layDel').addEventListener('click',()=>{if(layCab){const id=layCab;layCab=null;delCab(id);}});
 $('#layReset').addEventListener('click',resetLayout);
 $('#layDoneBtn').addEventListener('click',()=>setLayMode(false));
 $('#selCancel').addEventListener('click',()=>{sel=null;renderBoard();});
