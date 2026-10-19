@@ -1,11 +1,12 @@
 // スイッチ結線ゲーム オフライン用 Service Worker
-const VERSION = '20261018114931';
+const VERSION = '20261019091124';
 const APP = 'switch-app-' + VERSION;
 const FONTS = 'switch-fonts-v1';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(APP).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // HTTPキャッシュ(GitHub Pagesは10分)に残った古いファイルを取り込まないよう、必ずサーバーから取り直す
+  e.waitUntil(caches.open(APP).then(c => c.addAll(FILES.map(f => new Request(f, {cache: 'reload'})))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
